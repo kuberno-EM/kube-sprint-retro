@@ -141,13 +141,13 @@ const STATUS = {
 };
 const MOODS = [
   // Ordered worst → best (left → right)
-  {id:"ghost",   emoji:"💀", img:"https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Darth_Vader_in_the_movie_The_Empire_Strikes_Back_%281980%29.png/220px-Darth_Vader_in_the_movie_The_Empire_Strikes_Back_%281980%29.png",   label:"I am your father...",   col:"#94a3b8"},
-  {id:"angry",   emoji:"😡", img:"https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Emperor_Palpatine.png/220px-Emperor_Palpatine.png",                                                                                               label:"Fully turned Sith",     col:"#f87171"},
-  {id:"stressed",emoji:"⚡", img:"https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/General_Grievous.png/220px-General_Grievous.png",                                                                                                 label:"Order 66 incoming",     col:"#fb923c"},
-  {id:"meh",     emoji:"😐", img:"https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Boba_fett_holiday_special.png/220px-Boba_fett_holiday_special.png",                                                                               label:"I've got a bad feeling",col:"#fde047"},
-  {id:"focused", emoji:"🔵", img:"https://upload.wikimedia.org/wikipedia/commons/thumb/d/d6/Yoda_Empire_Strikes_Back.png/220px-Yoda_Empire_Strikes_Back.png",                                                                                label:"Trust in the Force",    col:"#a3e635"},
-  {id:"happy",   emoji:"😄", img:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/a1/Han_solo_and_chewbacca_in_star_wars.jpg/220px-Han_solo_and_chewbacca_in_star_wars.jpg",                                                          label:"Chewie, we're home",    col:"#86efac"},
-  {id:"excited", emoji:"🌟", img:"https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Luke-Skywalker.jpg/220px-Luke-Skywalker.jpg",                                                                                                    label:"Rebel victory!",        col:"#4ade80"},
+  {id:"ghost",   emoji:"💀", img:"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz4KICA8cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nIzFhMWEyZScgcng9JzUwJy8+CiAgPCEtLSBoZWxtZXQgZG9tZSAtLT4KICA8ZWxsaXBzZSBjeD0nNTAnIGN5PSczOCcgcng9JzI2JyByeT0nMjgnIGZpbGw9JyMxMTEnLz4KICA8IS0tIGhlbG1ldCBiYXNlL2NoZWVrcyAtLT4KICA8cmVjdCB4PScyNCcgeT0nNTInIHdpZHRoPSc1MicgaGVpZ2h0PScxOCcgcng9JzQnIGZpbGw9JyMwYTBhMGEnLz4KICA8IS0tIGZhY2VwbGF0ZSB0cmFwZXpvaWQgLS0+CiAgPHBvbHlnb24gcG9pbnRzPSczMiw1MiA2OCw1MiA2NCw3MCAzNiw3MCcgZmlsbD0nIzFhMWExYScvPgogIDwhLS0gYnJlYXRoaW5nIGdyaWxsZSBsaW5lcyAtLT4KICA8cmVjdCB4PSczOCcgeT0nNTYnIHdpZHRoPScyNCcgaGVpZ2h0PScyJyByeD0nMScgZmlsbD0nIzMzMycvPgogIDxyZWN0IHg9JzM4JyB5PSc2MScgd2lkdGg9JzI0JyBoZWlnaHQ9JzInIHJ4PScxJyBmaWxsPScjMzMzJy8+CiAgPHJlY3QgeD0nMzgnIHk9JzY2JyB3aWR0aD0nMjQnIGhlaWdodD0nMicgcng9JzEnIGZpbGw9JyMzMzMnLz4KICA8IS0tIGV5ZSBsZW5zZXMgLS0+CiAgPGVsbGlwc2UgY3g9JzQwJyBjeT0nNDcnIHJ4PSc3JyByeT0nNScgZmlsbD0nIzIyMicvPgogIDxlbGxpcHNlIGN4PSc2MCcgY3k9JzQ3JyByeD0nNycgcnk9JzUnIGZpbGw9JyMyMjInLz4KICA8IS0tIHJlZCBnbG93IGV5ZXMgLS0+CiAgPGVsbGlwc2UgY3g9JzQwJyBjeT0nNDcnIHJ4PSc0JyByeT0nMycgZmlsbD0nIzhiMDAwMCcgb3BhY2l0eT0nMC44Jy8+CiAgPGVsbGlwc2UgY3g9JzYwJyBjeT0nNDcnIHJ4PSc0JyByeT0nMycgZmlsbD0nIzhiMDAwMCcgb3BhY2l0eT0nMC44Jy8+CiAgPCEtLSBzaG91bGRlciBwYXVsZHJvbnMgLS0+CiAgPHJlY3QgeD0nMTYnIHk9JzY4JyB3aWR0aD0nMjAnIGhlaWdodD0nMTAnIHJ4PSczJyBmaWxsPScjMTExJy8+CiAgPHJlY3QgeD0nNjQnIHk9JzY4JyB3aWR0aD0nMjAnIGhlaWdodD0nMTAnIHJ4PSczJyBmaWxsPScjMTExJy8+CiAgPCEtLSBjaGVzdCBib3ggLS0+CiAgPHJlY3QgeD0nMzQnIHk9JzcyJyB3aWR0aD0nMzInIGhlaWdodD0nMTYnIHJ4PSczJyBmaWxsPScjMWExYTFhJy8+CiAgPHJlY3QgeD0nMzgnIHk9Jzc1JyB3aWR0aD0nNicgaGVpZ2h0PSc0JyByeD0nMScgZmlsbD0nI2MwMCcvPgogIDxyZWN0IHg9JzQ3JyB5PSc3NScgd2lkdGg9JzYnIGhlaWdodD0nNCcgcng9JzEnIGZpbGw9JyMwOTAnLz4KICA8cmVjdCB4PSc1NicgeT0nNzUnIHdpZHRoPSc2JyBoZWlnaHQ9JzQnIHJ4PScxJyBmaWxsPScjMDA5Jy8+Cjwvc3ZnPg==",   label:"I am your father...",   col:"#94a3b8"},
+  {id:"angry",   emoji:"😡", img:"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz4KICA8cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nIzFhMWEyZScgcng9JzUwJy8+CiAgPCEtLSBkYXJrIHJvYmUvaG9vZCAtLT4KICA8ZWxsaXBzZSBjeD0nNTAnIGN5PSc0NScgcng9JzI4JyByeT0nMzInIGZpbGw9JyMwZDBkMGQnLz4KICA8IS0tIGhvb2Qgc2hhZG93IC0tPgogIDxlbGxpcHNlIGN4PSc1MCcgY3k9JzMyJyByeD0nMjYnIHJ5PScyMCcgZmlsbD0nIzA1MDUwNScvPgogIDwhLS0gZmFjZSAtIHBhbGUgd3JpbmtsZWQgLS0+CiAgPGVsbGlwc2UgY3g9JzUwJyBjeT0nNTInIHJ4PScxNicgcnk9JzE0JyBmaWxsPScjYzhiODlhJy8+CiAgPCEtLSB3cmlua2xlcy9hZ2UgbGluZXMgLS0+CiAgPHBhdGggZD0nTTM4IDQ4IFE0MiA0NiA0NiA0OCcgc3Ryb2tlPScjYTA5MDdhJyBzdHJva2Utd2lkdGg9JzEuNScgZmlsbD0nbm9uZScvPgogIDxwYXRoIGQ9J001NCA0OCBRNTggNDYgNjIgNDgnIHN0cm9rZT0nI2EwOTA3YScgc3Ryb2tlLXdpZHRoPScxLjUnIGZpbGw9J25vbmUnLz4KICA8cGF0aCBkPSdNNDAgNTUgUTUwIDUyIDYwIDU1JyBzdHJva2U9JyNhMDkwN2EnIHN0cm9rZS13aWR0aD0nMS41JyBmaWxsPSdub25lJy8+CiAgPCEtLSBldmlsIHllbGxvdyBleWVzIC0tPgogIDxlbGxpcHNlIGN4PSc0NCcgY3k9JzUwJyByeD0nNCcgcnk9JzMnIGZpbGw9JyNmZmNjMDAnLz4KICA8ZWxsaXBzZSBjeD0nNTYnIGN5PSc1MCcgcng9JzQnIHJ5PSczJyBmaWxsPScjZmZjYzAwJy8+CiAgPGVsbGlwc2UgY3g9JzQ0JyBjeT0nNTAnIHJ4PScyJyByeT0nMicgZmlsbD0nI2ZmODgwMCcvPgogIDxlbGxpcHNlIGN4PSc1NicgY3k9JzUwJyByeD0nMicgcnk9JzInIGZpbGw9JyNmZjg4MDAnLz4KICA8IS0tIHNuZWVyIG1vdXRoIC0tPgogIDxwYXRoIGQ9J000NCA1OCBRNTAgNTUgNTYgNTgnIHN0cm9rZT0nIzdhNmE1YScgc3Ryb2tlLXdpZHRoPScxLjUnIGZpbGw9J25vbmUnLz4KICA8IS0tIGZvcmNlIGxpZ2h0bmluZyAtLT4KICA8cG9seWxpbmUgcG9pbnRzPScyMCw4MCAyOCw2OCAyNCw2MiAzMiw1MCcgc3Ryb2tlPScjODhhYWZmJyBzdHJva2Utd2lkdGg9JzInIGZpbGw9J25vbmUnIG9wYWNpdHk9JzAuOCcvPgogIDxwb2x5bGluZSBwb2ludHM9JzgwLDgwIDcyLDY4IDc2LDYyIDY4LDUwJyBzdHJva2U9JyM4OGFhZmYnIHN0cm9rZS13aWR0aD0nMicgZmlsbD0nbm9uZScgb3BhY2l0eT0nMC44Jy8+CiAgPCEtLSByb2JlIGJvZHkgLS0+CiAgPHBvbHlnb24gcG9pbnRzPScyMiw3OCA1MCw3MiA3OCw3OCA4MiwxMDAgMTgsMTAwJyBmaWxsPScjMGQwZDBkJy8+Cjwvc3ZnPg==",                                                                                               label:"Fully turned Sith",     col:"#f87171"},
+  {id:"stressed",emoji:"⚡", img:"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz4KICA8cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nIzFhMWEyZScgcng9JzUwJy8+CiAgPCEtLSBib2R5L3RvcnNvIC0tPgogIDxlbGxpcHNlIGN4PSc1MCcgY3k9JzcyJyByeD0nMTgnIHJ5PScxNCcgZmlsbD0nI2M4YzhiMCcvPgogIDwhLS0gNCBhcm1zIGhpbnQgLS0+CiAgPGxpbmUgeDE9JzMyJyB5MT0nNjUnIHgyPScxNicgeTI9JzU1JyBzdHJva2U9JyNiMGIwOTgnIHN0cm9rZS13aWR0aD0nNCcgc3Ryb2tlLWxpbmVjYXA9J3JvdW5kJy8+CiAgPGxpbmUgeDE9JzY4JyB5MT0nNjUnIHgyPSc4NCcgeTI9JzU1JyBzdHJva2U9JyNiMGIwOTgnIHN0cm9rZS13aWR0aD0nNCcgc3Ryb2tlLWxpbmVjYXA9J3JvdW5kJy8+CiAgPGxpbmUgeDE9JzMyJyB5MT0nNjgnIHgyPScxNCcgeTI9JzcyJyBzdHJva2U9JyNiMGIwOTgnIHN0cm9rZS13aWR0aD0nNCcgc3Ryb2tlLWxpbmVjYXA9J3JvdW5kJy8+CiAgPGxpbmUgeDE9JzY4JyB5MT0nNjgnIHgyPSc4NicgeTI9JzcyJyBzdHJva2U9JyNiMGIwOTgnIHN0cm9rZS13aWR0aD0nNCcgc3Ryb2tlLWxpbmVjYXA9J3JvdW5kJy8+CiAgPCEtLSBza3VsbCBoZWFkIC0tPgogIDxlbGxpcHNlIGN4PSc1MCcgY3k9JzQwJyByeD0nMjInIHJ5PScyNCcgZmlsbD0nI2Q4ZDhjMCcvPgogIDwhLS0gc2t1bGwgZXllIHNvY2tldHMgLS0+CiAgPGVsbGlwc2UgY3g9JzQxJyBjeT0nMzYnIHJ4PSc4JyByeT0nNycgZmlsbD0nIzFhMWEyZScvPgogIDxlbGxpcHNlIGN4PSc1OScgY3k9JzM2JyByeD0nOCcgcnk9JzcnIGZpbGw9JyMxYTFhMmUnLz4KICA8IS0tIGdsb3dpbmcgeWVsbG93IGV5ZXMgLS0+CiAgPGVsbGlwc2UgY3g9JzQxJyBjeT0nMzYnIHJ4PSc1JyByeT0nNCcgZmlsbD0nI2ZmYWEwMCcvPgogIDxlbGxpcHNlIGN4PSc1OScgY3k9JzM2JyByeD0nNScgcnk9JzQnIGZpbGw9JyNmZmFhMDAnLz4KICA8ZWxsaXBzZSBjeD0nNDEnIGN5PSczNicgcng9JzMnIHJ5PScyLjUnIGZpbGw9JyNmZjY2MDAnLz4KICA8ZWxsaXBzZSBjeD0nNTknIGN5PSczNicgcng9JzMnIHJ5PScyLjUnIGZpbGw9JyNmZjY2MDAnLz4KICA8IS0tIGphdy90ZWV0aCAtLT4KICA8cmVjdCB4PSczNicgeT0nNTAnIHdpZHRoPScyOCcgaGVpZ2h0PSc4JyByeD0nMycgZmlsbD0nI2I4YjhhMCcvPgogIDxyZWN0IHg9JzM4JyB5PSc1MCcgd2lkdGg9JzQnIGhlaWdodD0nNicgcng9JzEnIGZpbGw9JyNlOGU4ZDAnLz4KICA8cmVjdCB4PSc0NCcgeT0nNTAnIHdpZHRoPSc0JyBoZWlnaHQ9JzYnIHJ4PScxJyBmaWxsPScjZThlOGQwJy8+CiAgPHJlY3QgeD0nNTAnIHk9JzUwJyB3aWR0aD0nNCcgaGVpZ2h0PSc2JyByeD0nMScgZmlsbD0nI2U4ZThkMCcvPgogIDxyZWN0IHg9JzU2JyB5PSc1MCcgd2lkdGg9JzQnIGhlaWdodD0nNicgcng9JzEnIGZpbGw9JyNlOGU4ZDAnLz4KICA8IS0tIG5lY2sgLS0+CiAgPHJlY3QgeD0nNDQnIHk9JzU4JyB3aWR0aD0nMTInIGhlaWdodD0nOCcgcng9JzInIGZpbGw9JyNiOGI4YTAnLz4KPC9zdmc+",                                                                                                 label:"Order 66 incoming",     col:"#fb923c"},
+  {id:"meh",     emoji:"😐", img:"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz4KICA8cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nIzFhMWEyZScgcng9JzUwJy8+CiAgPCEtLSBqZXRwYWNrIGhpbnQgLS0+CiAgPHJlY3QgeD0nNjAnIHk9JzMwJyB3aWR0aD0nMTQnIGhlaWdodD0nMzAnIHJ4PSc0JyBmaWxsPScjNWE3YTVhJy8+CiAgPHJlY3QgeD0nNjInIHk9JzI4JyB3aWR0aD0nMTAnIGhlaWdodD0nOCcgcng9JzInIGZpbGw9JyM0YTZhNGEnLz4KICA8IS0tIGJvZHkgYXJtb3VyIC0tPgogIDxyZWN0IHg9JzI4JyB5PSc2Micgd2lkdGg9JzQ0JyBoZWlnaHQ9JzI4JyByeD0nNCcgZmlsbD0nIzRhNmEzYScvPgogIDwhLS0gY2hlc3QgcGxhdGUgLS0+CiAgPHJlY3QgeD0nMzUnIHk9JzY0JyB3aWR0aD0nMzAnIGhlaWdodD0nMTgnIHJ4PSczJyBmaWxsPScjNmE4YTVhJy8+CiAgPCEtLSBzaG91bGRlciBwYWRzIC0tPgogIDxlbGxpcHNlIGN4PScyOCcgY3k9JzY1JyByeD0nMTAnIHJ5PSc3JyBmaWxsPScjOGE1YTNhJy8+CiAgPGVsbGlwc2UgY3g9JzcyJyBjeT0nNjUnIHJ4PScxMCcgcnk9JzcnIGZpbGw9JyM4YTVhM2EnLz4KICA8IS0tIGhlbG1ldCBkb21lIC0tPgogIDxlbGxpcHNlIGN4PSc1MCcgY3k9JzM2JyByeD0nMjQnIHJ5PScyNicgZmlsbD0nIzRhNmEzYScvPgogIDwhLS0gcmFuZ2VmaW5kZXIgLS0+CiAgPHJlY3QgeD0nNjAnIHk9JzIyJyB3aWR0aD0nNScgaGVpZ2h0PScxNCcgcng9JzInIGZpbGw9JyM4YThhNGEnLz4KICA8cmVjdCB4PSc1OCcgeT0nMjInIHdpZHRoPSc5JyBoZWlnaHQ9JzUnIHJ4PScxJyBmaWxsPScjNmE2YTNhJy8+CiAgPCEtLSB2aXNvciBULXNoYXBlIC0tPgogIDxyZWN0IHg9JzMyJyB5PSc0MCcgd2lkdGg9JzM2JyBoZWlnaHQ9JzEwJyByeD0nMicgZmlsbD0nI2NjMDAwMCcvPgogIDxyZWN0IHg9JzQ0JyB5PSczNicgd2lkdGg9JzEyJyBoZWlnaHQ9JzE4JyByeD0nMicgZmlsbD0nI2NjMDAwMCcvPgogIDwhLS0gdmlzb3Igc2hpbmUgLS0+CiAgPHJlY3QgeD0nMzQnIHk9JzQxJyB3aWR0aD0nMTInIGhlaWdodD0nMycgcng9JzEnIGZpbGw9JyNmZjQ0NDQnIG9wYWNpdHk9JzAuNCcvPgogIDwhLS0gZGVudHMvYmF0dGxlIGRhbWFnZSAtLT4KICA8Y2lyY2xlIGN4PSc0MicgY3k9JzMwJyByPScyJyBmaWxsPScjM2E1YTJhJy8+CiAgPGNpcmNsZSBjeD0nNTUnIGN5PScyNicgcj0nMS41JyBmaWxsPScjM2E1YTJhJy8+Cjwvc3ZnPg==",                                                                               label:"I've got a bad feeling",col:"#fde047"},
+  {id:"focused", emoji:"🔵", img:"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz4KICA8cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nIzFhMWEyZScgcng9JzUwJy8+CiAgPCEtLSByb2JlIC0tPgogIDxwb2x5Z29uIHBvaW50cz0nMjAsMTAwIDM1LDY1IDUwLDcyIDY1LDY1IDgwLDEwMCcgZmlsbD0nIzhiNzM1NScvPgogIDwhLS0gbGVmdCBlYXIgLS0+CiAgPGVsbGlwc2UgY3g9JzIwJyBjeT0nNDInIHJ4PScxMCcgcnk9JzUnIGZpbGw9JyM0YTdhM2EnIHRyYW5zZm9ybT0ncm90YXRlKC0yMCAyMCA0MiknLz4KICA8IS0tIHJpZ2h0IGVhciAtLT4KICA8ZWxsaXBzZSBjeD0nODAnIGN5PSc0Micgcng9JzEwJyByeT0nNScgZmlsbD0nIzRhN2EzYScgdHJhbnNmb3JtPSdyb3RhdGUoMjAgODAgNDIpJy8+CiAgPCEtLSBoZWFkIC0tPgogIDxlbGxpcHNlIGN4PSc1MCcgY3k9JzQ1JyByeD0nMjYnIHJ5PScyNCcgZmlsbD0nIzVhOGE0YScvPgogIDwhLS0gd3JpbmtsZWQgZm9yZWhlYWQgLS0+CiAgPHBhdGggZD0nTTMwIDM4IFE1MCAzNCA3MCAzOCcgc3Ryb2tlPScjNGE3YTNhJyBzdHJva2Utd2lkdGg9JzEuNScgZmlsbD0nbm9uZScvPgogIDxwYXRoIGQ9J00zMyA0MyBRNTAgMzkgNjcgNDMnIHN0cm9rZT0nIzRhN2EzYScgc3Ryb2tlLXdpZHRoPScxLjUnIGZpbGw9J25vbmUnLz4KICA8IS0tIHdpc2UgZXllcyAtLT4KICA8ZWxsaXBzZSBjeD0nNDEnIGN5PSc0OCcgcng9JzYnIHJ5PSc1JyBmaWxsPScjMWEyYTFhJy8+CiAgPGVsbGlwc2UgY3g9JzU5JyBjeT0nNDgnIHJ4PSc2JyByeT0nNScgZmlsbD0nIzFhMmExYScvPgogIDxlbGxpcHNlIGN4PSc0MScgY3k9JzQ4JyByeD0nMy41JyByeT0nMy41JyBmaWxsPScjMmE3YTJhJy8+CiAgPGVsbGlwc2UgY3g9JzU5JyBjeT0nNDgnIHJ4PSczLjUnIHJ5PSczLjUnIGZpbGw9JyMyYTdhMmEnLz4KICA8ZWxsaXBzZSBjeD0nNDInIGN5PSc0Nycgcng9JzEuMicgcnk9JzEuMicgZmlsbD0nd2hpdGUnIG9wYWNpdHk9JzAuNycvPgogIDxlbGxpcHNlIGN4PSc2MCcgY3k9JzQ3JyByeD0nMS4yJyByeT0nMS4yJyBmaWxsPSd3aGl0ZScgb3BhY2l0eT0nMC43Jy8+CiAgPCEtLSBub3NlIC0tPgogIDxlbGxpcHNlIGN4PSc1MCcgY3k9JzU1JyByeD0nNCcgcnk9JzMnIGZpbGw9JyM0YTdhM2EnLz4KICA8IS0tIHNtaWxlIC0tPgogIDxwYXRoIGQ9J000MiA2MSBRNTAgNjYgNTggNjEnIHN0cm9rZT0nIzNhNmEzYScgc3Ryb2tlLXdpZHRoPScyJyBmaWxsPSdub25lJy8+CiAgPCEtLSB3aGl0ZSBoYWlyIHdpc3BzIC0tPgogIDxwYXRoIGQ9J00zMCAzMiBRMjggMjYgMzIgMjInIHN0cm9rZT0nI2U4ZThlMCcgc3Ryb2tlLXdpZHRoPScyJyBmaWxsPSdub25lJy8+CiAgPHBhdGggZD0nTTcwIDMyIFE3MiAyNiA2OCAyMicgc3Ryb2tlPScjZThlOGUwJyBzdHJva2Utd2lkdGg9JzInIGZpbGw9J25vbmUnLz4KICA8IS0tIHdhbGtpbmcgc3RpY2sgLS0+CiAgPGxpbmUgeDE9JzcyJyB5MT0nNzUnIHgyPSc4MicgeTI9JzEwMCcgc3Ryb2tlPScjOGI2OTE0JyBzdHJva2Utd2lkdGg9JzMnIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcvPgo8L3N2Zz4=",                                                                                label:"Trust in the Force",    col:"#a3e635"},
+  {id:"happy",   emoji:"😄", img:"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz4KICA8cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nIzFhMWEyZScgcng9JzUwJy8+CiAgPCEtLSBDaGV3aWUgKHJpZ2h0LCBicm93biBmdXIpIC0tPgogIDxlbGxpcHNlIGN4PSc2OCcgY3k9JzQ1JyByeD0nMjAnIHJ5PScyMicgZmlsbD0nIzZiNDIyNicvPgogIDxlbGxpcHNlIGN4PSc2OCcgY3k9JzM4JyByeD0nMTYnIHJ5PScxNCcgZmlsbD0nIzdhNGUyZCcvPgogIDwhLS0gQ2hld2llIGZ1ciB0ZXh0dXJlIC0tPgogIDxlbGxpcHNlIGN4PSc1OCcgY3k9JzMyJyByeD0nOCcgcnk9JzYnIGZpbGw9JyM1YTM1MjAnLz4KICA8ZWxsaXBzZSBjeD0nNzgnIGN5PSczMicgcng9JzgnIHJ5PSc2JyBmaWxsPScjNWEzNTIwJy8+CiAgPCEtLSBDaGV3aWUgZXllcyAtLT4KICA8ZWxsaXBzZSBjeD0nNjMnIGN5PSc0MCcgcng9JzMuNScgcnk9JzMuNScgZmlsbD0nIzFhMGEwMCcvPgogIDxlbGxpcHNlIGN4PSc3MycgY3k9JzQwJyByeD0nMy41JyByeT0nMy41JyBmaWxsPScjMWEwYTAwJy8+CiAgPGVsbGlwc2UgY3g9JzYzJyBjeT0nNDAnIHJ4PScxLjUnIHJ5PScxLjUnIGZpbGw9JyM0YTMwMjAnLz4KICA8ZWxsaXBzZSBjeD0nNzMnIGN5PSc0MCcgcng9JzEuNScgcnk9JzEuNScgZmlsbD0nIzRhMzAyMCcvPgogIDwhLS0gQ2hld2llIGJhbmRvbGllciAtLT4KICA8cGF0aCBkPSdNNTggNTIgUTY4IDQ4IDc4IDUyJyBzdHJva2U9JyNjOGEwMjAnIHN0cm9rZS13aWR0aD0nMycgZmlsbD0nbm9uZScvPgogIDwhLS0gSGFuIChsZWZ0LCBkYXJrIGphY2tldCkgLS0+CiAgPGVsbGlwc2UgY3g9JzM4JyBjeT0nNjgnIHJ4PScxNicgcnk9JzE0JyBmaWxsPScjMWExYTNhJy8+CiAgPGVsbGlwc2UgY3g9JzM4JyBjeT0nNDQnIHJ4PScxNScgcnk9JzE2JyBmaWxsPScjZDRhOTZhJy8+CiAgPCEtLSBIYW4gaGFpciAtIGRhcmsgYnJvd24gLS0+CiAgPGVsbGlwc2UgY3g9JzM4JyBjeT0nMzInIHJ4PScxNCcgcnk9JzEwJyBmaWxsPScjM2EyMDEwJy8+CiAgPHBhdGggZD0nTTI2IDM4IFEyNCAzMCAzMCAyNicgc3Ryb2tlPScjM2EyMDEwJyBzdHJva2Utd2lkdGg9JzUnIGZpbGw9J25vbmUnIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcvPgogIDwhLS0gSGFuIGV5ZXMgLS0+CiAgPGVsbGlwc2UgY3g9JzMzJyBjeT0nNDQnIHJ4PSczJyByeT0nMycgZmlsbD0nIzJhMWEwYScvPgogIDxlbGxpcHNlIGN4PSc0MycgY3k9JzQ0JyByeD0nMycgcnk9JzMnIGZpbGw9JyMyYTFhMGEnLz4KICA8IS0tIEhhbiBzbWlyayAtLT4KICA8cGF0aCBkPSdNMzIgNTIgUTM4IDU2IDQ0IDUzJyBzdHJva2U9JyNhMDcwNDAnIHN0cm9rZS13aWR0aD0nMS41JyBmaWxsPSdub25lJy8+CiAgPCEtLSBIYW4gdmVzdCAtLT4KICA8cmVjdCB4PScyOCcgeT0nNTYnIHdpZHRoPScyMCcgaGVpZ2h0PScyMCcgcng9JzInIGZpbGw9JyMyYTJhMWEnLz4KICA8cmVjdCB4PSczMCcgeT0nNTgnIHdpZHRoPSc2JyBoZWlnaHQ9JzE2JyByeD0nMScgZmlsbD0nIzFhMWEwYScvPgo8L3N2Zz4=",                                                          label:"Chewie, we're home",    col:"#86efac"},
+  {id:"excited", emoji:"🌟", img:"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz4KICA8cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nIzFhMWEyZScgcng9JzUwJy8+CiAgPCEtLSB3aGl0ZSByb2JlIGJvZHkgLS0+CiAgPHBvbHlnb24gcG9pbnRzPScyMiwxMDAgMzIsNjIgNTAsNjggNjgsNjIgNzgsMTAwJyBmaWxsPScjZThlOGUwJy8+CiAgPCEtLSBiZWx0IC0tPgogIDxyZWN0IHg9JzMwJyB5PSc2OCcgd2lkdGg9JzQwJyBoZWlnaHQ9JzYnIHJ4PScyJyBmaWxsPScjOGI2OTE0Jy8+CiAgPCEtLSBsaWdodHNhYmVyIGdsb3cgLS0+CiAgPGxpbmUgeDE9JzcyJyB5MT0nMzAnIHgyPSc3MicgeTI9JzcyJyBzdHJva2U9JyMwMGZmODgnIHN0cm9rZS13aWR0aD0nNCcgc3Ryb2tlLWxpbmVjYXA9J3JvdW5kJyBvcGFjaXR5PScwLjknLz4KICA8bGluZSB4MT0nNzInIHkxPSczMCcgeDI9JzcyJyB5Mj0nNzInIHN0cm9rZT0nIzg4ZmZjYycgc3Ryb2tlLXdpZHRoPSc4JyBzdHJva2UtbGluZWNhcD0ncm91bmQnIG9wYWNpdHk9JzAuMycvPgogIDwhLS0gc2FiZXIgaGlsdCAtLT4KICA8cmVjdCB4PSc2OCcgeT0nNjgnIHdpZHRoPSc4JyBoZWlnaHQ9JzEwJyByeD0nMicgZmlsbD0nIzg4OCcvPgogIDwhLS0gaGVhZCAtLT4KICA8ZWxsaXBzZSBjeD0nNDYnIGN5PSc0NCcgcng9JzE4JyByeT0nMjAnIGZpbGw9JyNkNGIwN2EnLz4KICA8IS0tIGJsb25kZSBoYWlyIC0tPgogIDxlbGxpcHNlIGN4PSc0NicgY3k9JzI4JyByeD0nMTcnIHJ5PScxMicgZmlsbD0nI2M4YTAzMCcvPgogIDxwYXRoIGQ9J00zMCAzNiBRMjggMjggMzQgMjQnIHN0cm9rZT0nI2M4YTAzMCcgc3Ryb2tlLXdpZHRoPSc1JyBmaWxsPSdub25lJyBzdHJva2UtbGluZWNhcD0ncm91bmQnLz4KICA8cGF0aCBkPSdNNjIgMzYgUTYyIDI4IDU4IDI1JyBzdHJva2U9JyNjOGEwMzAnIHN0cm9rZS13aWR0aD0nNCcgZmlsbD0nbm9uZScgc3Ryb2tlLWxpbmVjYXA9J3JvdW5kJy8+CiAgPCEtLSBob3BlZnVsIGV5ZXMgLS0+CiAgPGVsbGlwc2UgY3g9JzQwJyBjeT0nNDQnIHJ4PSc0JyByeT0nNCcgZmlsbD0nIzFhMWEyYScvPgogIDxlbGxpcHNlIGN4PSc1MicgY3k9JzQ0JyByeD0nNCcgcnk9JzQnIGZpbGw9JyMxYTFhMmEnLz4KICA8ZWxsaXBzZSBjeD0nNDAnIGN5PSc0NCcgcng9JzIuNScgcnk9JzIuNScgZmlsbD0nIzNhNWE4YScvPgogIDxlbGxpcHNlIGN4PSc1MicgY3k9JzQ0JyByeD0nMi41JyByeT0nMi41JyBmaWxsPScjM2E1YThhJy8+CiAgPGVsbGlwc2UgY3g9JzQxJyBjeT0nNDMnIHJ4PScxJyByeT0nMScgZmlsbD0nd2hpdGUnIG9wYWNpdHk9JzAuOCcvPgogIDxlbGxpcHNlIGN4PSc1MycgY3k9JzQzJyByeD0nMScgcnk9JzEnIGZpbGw9J3doaXRlJyBvcGFjaXR5PScwLjgnLz4KICA8IS0tIGRldGVybWluZWQgc21pbGUgLS0+CiAgPHBhdGggZD0nTTM5IDUzIFE0NiA1OCA1MyA1Mycgc3Ryb2tlPScjYTA3ODQ4JyBzdHJva2Utd2lkdGg9JzEuNScgZmlsbD0nbm9uZScvPgogIDwhLS0gRm9yY2UgaGFuZCBnZXN0dXJlIC0tPgogIDxlbGxpcHNlIGN4PScyNicgY3k9JzYyJyByeD0nNicgcnk9JzUnIGZpbGw9JyNkNGIwN2EnIHRyYW5zZm9ybT0ncm90YXRlKC0yMCAyNiA2MiknLz4KPC9zdmc+",                                                                                                    label:"Rebel victory!",        col:"#4ade80"},
 ];
 const NOTE_COLS = [
   {id:"well", label:"✅ What went well?",      bg:"#fefce8",border:"#fde047",accent:"#ca8a04"},
@@ -180,6 +180,7 @@ let prevActions  = [];
 let nextVotes    = {};
 let importedHealth = null;
 let importedMood   = null;  // moodSummary from previous sprint
+let nextNotes      = [];     // improvement suggestions for next sprint retro format
 
 // Local (this browser session — prevents double-voting)
 // Keys are sprint-scoped so votes don't bleed across sprints
@@ -219,6 +220,7 @@ function initListeners() {
   ref("nextVotes").on("value",    s=>{ nextVotes   = s.val()||{}; render(false); });
   ref("importedHealth").on("value",s=>{ importedHealth = s.val()||null; render(false); });
   ref("importedMood").on("value",  s=>{ importedMood   = s.val()||null; render(false); });
+  ref("nextNotes").on("value",    s=>{ nextNotes      = objToArr(s.val()); render(false); });
 }
 
 function initMetaListeners() {
@@ -514,6 +516,8 @@ function handleClearAll() {
   fw("nextVotes",{});
   fw("importedHealth",null);
   fw("importedMood",null);
+  fw("nextNotes",[]);
+  nextNotes = [];
   // Also clear this browser's local vote memory so the person can vote fresh
   myMoodVote    = null;
   myHealthVotes = {};
@@ -1028,6 +1032,23 @@ function renderRetro(panel) {
   panel.appendChild(actWrap);
 }
 
+function addNextNote() {
+  const input = document.getElementById("next-note-input");
+  const v = (input?.value||"").trim();
+  if(!v) return;
+  const id = Date.now();
+  const updated = [...nextNotes, {id, text:v, votes:0}];
+  fw("nextNotes", updated);
+  input.value = "";
+}
+
+function upvoteNextNote(id) {
+  const updated = [...nextNotes]
+    .map(n => n.id===id ? {...n, votes:n.votes+1} : n)
+    .sort((a,b)=>b.votes-a.votes);
+  fw("nextNotes", updated);
+}
+
 /* ═══ NEXT SPRINT ═══════════════════════════════════════════ */
 function renderNext(panel) {
   panel.appendChild(sectionHead("🗳️ Shape the Next Sprint","Vote on format and structure — up to 3 votes each. Results visible to everyone live."));
@@ -1062,7 +1083,7 @@ function renderNext(panel) {
 
   if(Object.values(nextVotes).some(v=>v>0)) {
     const top = document.createElement("div");
-    top.style.cssText = "background:#1e293b;border:1px solid #334155;border-radius:10px;padding:14px 18px";
+    top.style.cssText = "background:#1e293b;border:1px solid #334155;border-radius:10px;padding:14px 18px;margin-bottom:24px";
     const sorted = [...NEXT_VOTES_DEF].filter(o=>nextVotes[o.id]>0).sort((a,b)=>(nextVotes[b.id]||0)-(nextVotes[a.id]||0)).slice(0,3);
     top.innerHTML = `<div style="font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Top picks so far</div>
       ${sorted.map((o,i)=>`<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
@@ -1073,6 +1094,38 @@ function renderNext(panel) {
       </div>`).join("")}`;
     panel.appendChild(top);
   }
+
+  // ── Retro format improvement notes ──
+  const notesWrap = document.createElement("div");
+  notesWrap.style.cssText = "background:#1e293b;border:1.5px solid #6366f1;border-radius:14px;padding:16px;min-height:200px;display:flex;flex-direction:column";
+
+  const notesHTML = nextNotes.length === 0
+    ? `<div style="text-align:center;padding:24px 0;color:#475569;font-size:13px">Suggestions will appear here live ✨</div>`
+    : nextNotes.map((n,i)=>{
+        const isTop = n.votes>0 && i===0;
+        return `<div style="background:${isTop?"#6366f122":"#0f172a"};border:${isTop?2:1}px solid ${isTop?"#6366f1":"#4338ca44"};border-radius:8px;padding:9px 10px 9px 12px;font-size:13px;color:#e2e8f0;font-weight:${isTop?700:400};box-shadow:${isTop?"0 0 0 2px #6366f144,0 2px 8px rgba(0,0,0,.18)":"0 2px 6px rgba(0,0,0,.15)"};line-height:1.4;display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          ${isTop?`<span style="font-size:12px;flex-shrink:0">🔥</span>`:""}
+          <span style="flex:1">${n.text}</span>
+          <button onclick="upvoteNextNote(${n.id})" style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:1px;background:${n.votes>0?"#6366f122":"rgba(255,255,255,.05)"};border:1.5px solid ${n.votes>0?"#6366f1":"#334155"};border-radius:7px;padding:4px 7px;min-width:34px;cursor:pointer">
+            <span style="font-size:11px;line-height:1;color:#94a3b8">▲</span>
+            <span style="font-size:12px;font-weight:800;color:${n.votes>0?"#818cf8":"#64748b"};line-height:1;margin-top:1px">${n.votes}</span>
+          </button>
+        </div>`;
+      }).join("");
+
+  notesWrap.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <span style="font-weight:800;font-size:14px;color:#f1f5f9">💬 Retro format suggestions</span>
+      <span style="background:#6366f144;color:#818cf8;border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700">${nextNotes.length}</span>
+    </div>
+    <div style="font-size:12px;font-style:italic;color:#64748b;border-left:3px solid #6366f1;padding-left:10px;margin-bottom:14px;line-height:1.5">What would make the next retro work better?</div>
+    <div style="flex:1">${notesHTML}</div>
+    <div style="display:flex;gap:6px;margin-top:auto;padding-top:8px">
+      <input id="next-note-input" placeholder="Add a suggestion — press Enter" onkeydown="if(event.key==='Enter')addNextNote()"
+        style="flex:1;background:#0f172a;border:1.5px solid #4338ca;border-radius:8px;padding:8px 11px;font-size:13px;color:#f1f5f9;outline:none"/>
+      <button onclick="addNextNote()" style="background:#6366f1;color:#fff;border:none;border-radius:8px;padding:0 13px;font-size:18px;font-weight:800">+</button>
+    </div>`;
+  panel.appendChild(notesWrap);
 }
 
 /* ═══ EXPORT / IMPORT ═══════════════════════════════════════ */
