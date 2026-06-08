@@ -434,10 +434,21 @@ async function applySprintNum() {
     const prevData = prevSnap.val() || {};
 
     // ── Build carry-forward payload for the new sprint ──
-    // retroActions from the previous sprint become prevActions for the new one
+    // 1. Retro actions from previous sprint → new prevActions (all start undone)
     const prevRetroActions = prevData.actions
       ? Object.values(prevData.actions).map(a=>({text:a.text, owner:a.owner||"", done:false}))
       : [];
+
+    // 2. Any incomplete prevActions from the previous sprint carry over too
+    //    (marked with carriedOver so the UI can flag them)
+    const prevIncomplete = prevData.prevActions
+      ? Object.values(prevData.prevActions)
+          .filter(a => a.done === false || a.done === null || a.done === undefined)
+          .map(a=>({text:a.text, owner:a.owner||"", done:false, carriedOver:true}))
+      : [];
+
+    // Merge: incomplete carried-over actions first, then new retro actions
+    const allPrevActions = [...prevIncomplete, ...prevRetroActions];
 
     // health results carry forward as importedHealth baselines
     const prevHealthVotes = prevData.healthVotes || null;
@@ -460,7 +471,7 @@ async function applySprintNum() {
     // ── Write new sprint seed data ──
     const newSprintRef = db.ref(`sprints/s${num}`);
     const writes = [];
-    if(prevRetroActions.length)    writes.push(newSprintRef.child("prevActions").set(prevRetroActions));
+    if(allPrevActions.length)      writes.push(newSprintRef.child("prevActions").set(allPrevActions));
     if(importedHealthPayload)      writes.push(newSprintRef.child("importedHealth").set(importedHealthPayload));
     if(importedMoodPayload)        writes.push(newSprintRef.child("importedMood").set(importedMoodPayload));
     // Also save full export snapshot on the previous sprint for archiving
@@ -692,7 +703,9 @@ function renderCheckin(panel) {
   prevActions.forEach((a,i)=>{
     const bg = a.done ? "#14532d18" : "#7f1d1d18";
     rows += `<tr style="background:${bg}">
-      <td style="padding:13px 16px;font-size:14px">${a.text||""}</td>
+      <td style="padding:13px 16px;font-size:14px">
+        ${a.carriedOver?`<span style="font-size:10px;font-weight:700;color:#f59e0b;background:#f59e0b22;border:1px solid #f59e0b55;border-radius:4px;padding:1px 6px;margin-right:6px;letter-spacing:.04em">CARRIED OVER</span>`:""}${a.text||""}
+      </td>
       <td style="padding:13px 16px;font-size:13px;color:#94a3b8">${a.owner||""}</td>
       <td style="padding:13px 16px;text-align:center">
         <div style="display:inline-flex;border-radius:8px;overflow:hidden;border:1px solid #334155">
