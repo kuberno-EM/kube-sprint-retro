@@ -53,7 +53,7 @@
   <div id="header" style="background:#020617;border-bottom:2px solid #f59e0b;padding:14px 28px;display:flex;justify-content:space-between;align-items:center">
     <div>
       <div style="font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:#f59e0b;margin-bottom:3px">Agile Ceremony</div>
-      <div style="font-size:20px;font-weight:800;letter-spacing:-.03em">Sprint 55 — Review Board 🖖</div>
+      <div id="header-title" style="font-size:20px;font-weight:800;letter-spacing:-.03em">Sprint 55 — Review Board 🖖</div>
     </div>
     <div style="display:flex;align-items:center;gap:20px">
       <div style="display:flex;align-items:center;gap:6px">
@@ -599,9 +599,10 @@ function updateHeader() {
   const ha = document.getElementById("header-actions");
   const hd = document.getElementById("header-date");
   const ht = document.getElementById("header-title");
-  if(ha) ha.textContent = `✅ ${prevActions.filter(a=>a.done).length}/${prevActions.length} previous actions`;
+  if(ha) ha.textContent = "✅ "+prevActions.filter(a=>a.done).length+"/"+prevActions.length+" previous actions";
   if(hd) hd.textContent = new Date().toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
-  if(ht) ht.textContent = `Sprint ${sprintNum} — Review Board 🖖`;
+  if(ht) ht.textContent = "Sprint "+sprintNum+" — Review Board 🖖";
+  document.title = "Sprint "+sprintNum+" — Review Board 🖖";
 }
 
 /* ─── RENDER ────────────────────────────────────────────────── */
