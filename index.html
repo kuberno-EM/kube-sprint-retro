@@ -822,6 +822,9 @@ function renderHealth(panel) {
     const prevS = importedHealth?.[cat.id]?.dominant || cat.prev;
     const trend = dom ? trendOf(prevS,dom) : null;
 
+    const prevVotes = importedHealth?.[cat.id]?.votes || null;
+    const prevTotal = prevVotes ? (prevVotes.red||0)+(prevVotes.amber||0)+(prevVotes.green||0) : 0;
+
     const card = document.createElement("div");
     card.style.cssText = `background:${dom?STATUS[dom].fill+"18":"#1e293b"};border:2px solid ${dom?STATUS[dom].border+"88":"#334155"};border-radius:12px;padding:12px 14px;transition:all .3s`;
 
