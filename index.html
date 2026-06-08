@@ -113,10 +113,11 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// Sprint number — shared via Firebase so header stays in sync for everyone
+// Sprint number — loaded from Firebase meta path on boot
 let sprintNum = 55;
 let SPRINT    = "s" + sprintNum;
-const ref = (path) => db.ref(`sprints/${SPRINT}/${path}`);
+// ref() reads SPRINT at call time so it always uses the current sprint path
+const ref = (path) => db.ref("sprints/" + SPRINT + "/" + path);
 
 /* ─── STATIC DATA ───────────────────────────────────────────── */
 const HEALTH_CATS = [
@@ -180,9 +181,10 @@ let importedHealth = null;
 let importedMood   = null;  // moodSummary from previous sprint
 
 // Local (this browser session — prevents double-voting)
+// Keys are sprint-scoped so votes don't bleed across sprints
 const LS = {
-  get:(k)=>{ try{return JSON.parse(localStorage.getItem('s55:'+k))}catch{return null} },
-  set:(k,v)=>{ try{localStorage.setItem('s55:'+k,JSON.stringify(v))}catch{} }
+  get:(k)=>{ try{return JSON.parse(localStorage.getItem("s"+sprintNum+":"+k))}catch{return null} },
+  set:(k,v)=>{ try{localStorage.setItem("s"+sprintNum+":"+k,JSON.stringify(v))}catch{} }
 };
 let myMoodVote    = LS.get('myMood') || null;
 let myHealthVotes = LS.get('myHealth') || {};
@@ -192,7 +194,21 @@ let currentTab = "checkin";
 let connected  = false;
 
 /* ─── FIREBASE LISTENERS ────────────────────────────────────── */
+let _sprintListenersPath = null; // track which path listeners are attached to
+
 function initListeners() {
+  // Detach old sprint-specific listeners if path changed
+  if(_sprintListenersPath && _sprintListenersPath !== SPRINT) {
+    db.ref("sprints/" + _sprintListenersPath).off();
+  }
+  _sprintListenersPath = SPRINT;
+
+  // Re-load local vote memory for this sprint
+  myMoodVote    = LS.get("myMood")   || null;
+  myHealthVotes = LS.get("myHealth") || {};
+  myNextVotes   = LS.get("myNext")   || {};
+
+  // Sprint-scoped listeners
   ref("moodVotes").on("value",    s=>{ moodVotes   = s.val()||{}; render(false); updateHeader(); });
   ref("healthVotes").on("value",  s=>{ healthVotes = s.val()||{}; render(false); });
   ref("notes").on("value",        s=>{ notes       = s.val()||{well:[],bad:[],ideas:[]}; render(false); });
@@ -202,22 +218,17 @@ function initListeners() {
   ref("nextVotes").on("value",    s=>{ nextVotes   = s.val()||{}; render(false); });
   ref("importedHealth").on("value",s=>{ importedHealth = s.val()||null; render(false); });
   ref("importedMood").on("value",  s=>{ importedMood   = s.val()||null; render(false); });
-  ref("sprintNum").on("value", s=>{
-    const v = s.val();
-    if(v && v !== sprintNum) {
-      sprintNum = v; SPRINT = "s"+v;
-      updateHeader();
-      render(false);
-    }
-  });
+}
 
-  // Sprint number is stored at a meta path shared across all sprints
+function initMetaListeners() {
+  // Sprint number is stored outside sprint paths so it survives across sprints
   db.ref("sprints/meta/sprintNum").on("value", s=>{
     const v = s.val();
     if(v && v !== sprintNum) {
       sprintNum = v;
       SPRINT    = "s" + v;
       updateHeader();
+      initListeners(); // re-attach to new path
       render(false);
     }
   });
@@ -453,23 +464,21 @@ async function applySprintNum() {
     writes.push(db.ref(`sprints/s${prevNum}/snapshot`).set(exportSnap));
     await Promise.all(writes);
 
-    // ── Switch the board ──
-    await db.ref("sprints/meta/sprintNum").set(num);
+    // ── Switch the board — write meta, meta listener handles the rest ──
     sprintNum = num;
     SPRINT    = "s" + num;
-    // Clear local vote memory for the new sprint
-    myMoodVote    = null;
-    myHealthVotes = {};
-    myNextVotes   = {};
-    localStorage.removeItem(`s${prevNum}:myMood`);
-    localStorage.removeItem(`s${prevNum}:myHealth`);
-    localStorage.removeItem(`s${prevNum}:myNext`);
-    updateHeader();
+    // Clear local vote memory for the previous sprint
+    ["myMood","myHealth","myNext"].forEach(k=>{
+      localStorage.removeItem("s"+prevNum+":"+k);
+    });
+    await db.ref("sprints/meta/sprintNum").set(num);
+    // initMetaListener will fire and call initListeners() for us,
+    // but we also do it immediately for this browser
     initListeners();
+    updateHeader();
     render(false);
-    // Refresh settings panel
     openSettings();
-    if(ok){ ok.style.color="#4ade80"; ok.textContent=`✓ Switched to Sprint ${num} — previous actions and baselines carried forward`; }
+    if(ok){ ok.style.color="#4ade80"; ok.textContent="✓ Switched to Sprint "+num+" — actions and baselines carried forward"; }
   } catch(e) {
     console.error(e);
     if(ok)  ok.style.display="none";
@@ -606,7 +615,7 @@ function render(animate) {
     case "wins":    renderWins(panel);    break;
     case "retro":   renderRetro(panel);   break;
     case "next":    renderNext(panel);    break;
-    case "export":  renderExport(panel);  break;
+
   }
 
   content.appendChild(panel);
@@ -1064,13 +1073,13 @@ function renderExport(panel) {
     </div>`;
   panel.appendChild(sprintBox);
 
-  // Export
+  // Export all sprints
   const exportBox = document.createElement("div");
   exportBox.style.cssText = "background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px 24px;margin-bottom:16px";
   exportBox.innerHTML = `
-    <div style="font-size:15px;font-weight:800;color:#f1f5f9;margin-bottom:6px">Export Sprint ${sprintNum}</div>
-    <div style="font-size:13px;color:#64748b;margin-bottom:16px">Copies a full JSON snapshot to your clipboard. Paste it into the Import field in the next sprint's board.</div>
-    <button id="export-btn" onclick="handleExport()" style="background:#f59e0b;color:#020617;border:none;border-radius:10px;padding:11px 26px;font-size:14px;font-weight:800;transition:all .3s;display:flex;align-items:center;gap:8px">📋 Copy sprint data to clipboard</button>`;
+    <div style="font-size:15px;font-weight:800;color:#f1f5f9;margin-bottom:6px">📚 Export All Sprints</div>
+    <div style="font-size:13px;color:#64748b;margin-bottom:16px">Downloads a complete JSON archive of every sprint stored in Firebase — all votes, notes, actions and health data across all sprint numbers.</div>
+    <button id="export-all-btn" onclick="handleExportAll()" style="background:#f59e0b;color:#020617;border:none;border-radius:10px;padding:11px 26px;font-size:14px;font-weight:800;transition:all .3s;display:flex;align-items:center;gap:8px">📥 Download all sprint data</button>`;
   panel.appendChild(exportBox);
 
   // Import
@@ -1084,15 +1093,6 @@ function renderExport(panel) {
     <div id="import-ok" style="color:#4ade80;font-size:12px;margin-top:6px"></div>
     <button onclick="handleImport()" style="margin-top:12px;background:#3b82f6;color:#fff;border:none;border-radius:10px;padding:10px 24px;font-size:14px;font-weight:700;transition:all .2s">Load previous sprint →</button>`;
   panel.appendChild(importBox);
-
-  // Export all sprints
-  const exportAllBox = document.createElement("div");
-  exportAllBox.style.cssText = "background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px 24px;margin-bottom:16px";
-  exportAllBox.innerHTML = `
-    <div style="font-size:15px;font-weight:800;color:#f1f5f9;margin-bottom:6px">📚 Export All Sprints</div>
-    <div style="font-size:13px;color:#64748b;margin-bottom:16px">Downloads a full JSON archive of every sprint stored in Firebase — useful for a permanent backup or migrating to a new board.</div>
-    <button id="export-all-btn" onclick="handleExportAll()" style="background:#334155;color:#e2e8f0;border:1.5px solid #475569;border-radius:10px;padding:11px 26px;font-size:14px;font-weight:800;transition:all .3s;display:flex;align-items:center;gap:8px">📥 Download all sprint data</button>`;
-  panel.appendChild(exportAllBox);
 
   // Danger zone
   const danger = document.createElement("div");
@@ -1115,10 +1115,19 @@ function renderExport(panel) {
 }
 
 /* ─── BOOT ──────────────────────────────────────────────────── */
-window.addEventListener("load", ()=>{
+window.addEventListener("load", async ()=>{
+  // Load sprint number from Firebase first, then init listeners on correct path
+  try {
+    const snap = await db.ref("sprints/meta/sprintNum").once("value");
+    const v = snap.val();
+    if(v) { sprintNum = v; SPRINT = "s" + v; }
+  } catch(e) { /* use default 55 */ }
+
   updateHeader();
   initListeners();
-  // Hide loader, show app once first data arrives (or after 2s timeout)
+  initMetaListeners();
+
+  // Hide loader once first data arrives (or after 2s)
   let shown = false;
   const show = ()=>{
     if(shown) return; shown=true;
