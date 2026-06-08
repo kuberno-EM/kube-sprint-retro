@@ -89,7 +89,10 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
-const SPRINT = "s55";
+
+// Sprint number — shared via Firebase so header stays in sync for everyone
+let sprintNum = 55;
+let SPRINT    = "s" + sprintNum;
 const ref = (path) => db.ref(`sprints/${SPRINT}/${path}`);
 
 /* ─── STATIC DATA ───────────────────────────────────────────── */
@@ -151,6 +154,7 @@ let actions      = [];
 let prevActions  = [];
 let nextVotes    = {};
 let importedHealth = null;
+let importedMood   = null;  // moodSummary from previous sprint
 
 // Local (this browser session — prevents double-voting)
 const LS = {
@@ -174,6 +178,26 @@ function initListeners() {
   ref("prevActions").on("value",  s=>{ prevActions = objToArr(s.val()); render(false); updateHeader(); });
   ref("nextVotes").on("value",    s=>{ nextVotes   = s.val()||{}; render(false); });
   ref("importedHealth").on("value",s=>{ importedHealth = s.val()||null; render(false); });
+  ref("importedMood").on("value",  s=>{ importedMood   = s.val()||null; render(false); });
+  ref("sprintNum").on("value", s=>{
+    const v = s.val();
+    if(v && v !== sprintNum) {
+      sprintNum = v; SPRINT = "s"+v;
+      updateHeader();
+      render(false);
+    }
+  });
+
+  // Sprint number is stored at a meta path shared across all sprints
+  db.ref("sprints/meta/sprintNum").on("value", s=>{
+    const v = s.val();
+    if(v && v !== sprintNum) {
+      sprintNum = v;
+      SPRINT    = "s" + v;
+      updateHeader();
+      render(false);
+    }
+  });
 
   db.ref(".info/connected").on("value", s=>{
     connected = s.val();
@@ -287,7 +311,7 @@ function setPrevActionStatus(idx, done) {
 /* ─── EXPORT / IMPORT ───────────────────────────────────────── */
 function handleExport() {
   const payload = {
-    exportedFrom: "Sprint 55",
+    exportedFrom: `Sprint ${sprintNum}`,
     exportedAt: new Date().toISOString(),
     previousActions: prevActions.map(a=>({text:a.text,owner:a.owner,done:a.done})),
     healthResults: Object.fromEntries(
@@ -326,12 +350,29 @@ function handleImport() {
     const newIH   = data.healthResults||null;
     fw("prevActions", newPrev);
     if(newIH) fw("importedHealth", newIH);
+    if(data.moodSummary) fw("importedMood", data.moodSummary);
     ta.value = "";
-    okEl.textContent = "✓ Previous sprint loaded — health baselines and actions updated for everyone.";
+    okEl.textContent = "✓ Previous sprint loaded — health baselines, mood reference and actions updated for everyone.";
     setTab("checkin");
   } catch(e) {
     errEl.textContent = "⚠️ Couldn't parse that — make sure you paste the full export JSON.";
   }
+}
+
+function applySprintNum() {
+  const input = document.getElementById("sprint-num-input");
+  const num = parseInt(input?.value, 10);
+  if(!num || num < 1 || num > 999) return;
+  // Write to Firebase so all connected browsers update
+  db.ref("sprints/meta/sprintNum").set(num);
+  sprintNum = num;
+  SPRINT    = "s" + num;
+  updateHeader();
+  render(false);
+  // Re-attach listeners to new sprint path
+  initListeners();
+  const ok = document.getElementById("sprint-num-ok");
+  if(ok){ ok.style.display="inline"; setTimeout(()=>ok.style.display="none", 2500); }
 }
 
 function handleClearAll() {
@@ -345,6 +386,7 @@ function handleClearAll() {
   fw("prevActions",[]);
   fw("nextVotes",{});
   fw("importedHealth",null);
+  fw("importedMood",null);
   // Also clear this browser's local vote memory so the person can vote fresh
   myMoodVote    = null;
   myHealthVotes = {};
@@ -399,8 +441,10 @@ function setTab(id) {
 function updateHeader() {
   const ha = document.getElementById("header-actions");
   const hd = document.getElementById("header-date");
+  const ht = document.getElementById("header-title");
   if(ha) ha.textContent = `✅ ${prevActions.filter(a=>a.done).length}/${prevActions.length} previous actions`;
   if(hd) hd.textContent = new Date().toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
+  if(ht) ht.textContent = `Sprint ${sprintNum} — Review Board 🖖`;
 }
 
 /* ─── RENDER ────────────────────────────────────────────────── */
@@ -536,6 +580,26 @@ function renderMood(panel) {
     panel.appendChild(hint);
   }
 
+  // Previous sprint mood reference
+  if(importedMood && Object.values(importedMood).some(m=>m.count>0)) {
+    const prevTotal = Object.values(importedMood).reduce((s,m)=>s+(m.count||0),0);
+    const prevRef = document.createElement("div");
+    prevRef.style.cssText = "background:#1e293b;border-radius:10px;padding:14px 18px;border:1px solid #334155;margin-bottom:16px";
+    const prevBars = MOODS.filter(m=>importedMood[m.id]&&importedMood[m.id].count>0).map(m=>{
+      const pct = Math.round((importedMood[m.id].count/prevTotal)*100);
+      return `<div title="${m.label}: ${importedMood[m.id].count}" style="background:${m.col};width:${pct}%;display:flex;align-items:center;justify-content:center;font-size:16px;min-width:2px">${pct>8?m.emoji:""}</div>`;
+    }).join("");
+    const prevLegend = MOODS.filter(m=>importedMood[m.id]&&importedMood[m.id].count>0).map(m=>{
+      const pct = Math.round((importedMood[m.id].count/prevTotal)*100);
+      return `<span style="font-size:11px;color:${m.col}">${m.emoji} ${pct}%</span>`;
+    }).join("");
+    prevRef.innerHTML = `
+      <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Last sprint mood — ${prevTotal} votes</div>
+      <div style="display:flex;height:28px;border-radius:6px;overflow:hidden;gap:2px;margin-bottom:8px">${prevBars}</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">${prevLegend}</div>`;
+    panel.appendChild(prevRef);
+  }
+
   if(totalMood > 0) {
     const bar = document.createElement("div");
     bar.style.cssText = "background:#1e293b;border-radius:10px;padding:16px 20px;border:1px solid #334155";
@@ -624,11 +688,19 @@ function renderHealth(panel) {
           ${total>0?`<span style="font-size:11px;color:#64748b;font-family:monospace">${total} vote${total!==1?"s":""}</span>`:""}
         </div>
       </div>
-      <div style="font-size:11px;color:#64748b;margin-bottom:10px;display:flex;align-items:center;gap:4px">
+      <div style="font-size:11px;color:#64748b;margin-bottom:${prevVotes&&prevTotal>0?4:10}px;display:flex;align-items:center;gap:4px">
         Last sprint:
         <div style="width:8px;height:8px;border-radius:50%;background:${STATUS[prevS].fill};border:1px solid ${STATUS[prevS].border};margin-left:4px"></div>
         <span style="color:${STATUS[prevS].border}">${STATUS[prevS].label}</span>
       </div>
+      ${prevVotes&&prevTotal>0?`<div style="margin-bottom:10px">
+        <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px">
+          ${["red","amber","green"].map(s=>{const p=Math.round(((prevVotes[s]||0)/prevTotal)*100);return p>0?`<div style="width:${p}%;background:${STATUS[s].fill};border:1px solid ${STATUS[s].border};border-radius:2px" title="Last sprint ${STATUS[s].label}: ${prevVotes[s]}"></div>`:"";}).join("")}
+        </div>
+        <div style="display:flex;gap:6px;margin-top:3px">
+          ${["red","amber","green"].filter(s=>(prevVotes[s]||0)>0).map(s=>`<span style="font-size:10px;color:${STATUS[s].border}">${STATUS[s].emoji} ${prevVotes[s]}</span>`).join("")}
+        </div>
+      </div>`:""}
       ${distBar}
       <div style="display:flex;gap:6px">${btns}</div>
       ${myV?`<div style="font-size:11px;text-align:center;margin-top:6px;color:#475569">Your vote: <span style="color:${STATUS[myV].border};font-weight:700">${STATUS[myV].label}</span></div>`:""}`;
@@ -824,6 +896,21 @@ function renderExport(panel) {
   info.style.cssText = "background:#0f2a1a;border:1px solid #166534;border-radius:10px;padding:12px 16px;margin-bottom:20px;display:flex;gap:10px;align-items:flex-start";
   info.innerHTML = `<span style="font-size:16px">🔥</span><div style="font-size:13px;color:#86efac;line-height:1.6"><strong>Firebase Realtime Database is active.</strong> All votes, notes, wins and actions sync in real-time across everyone's browsers. Data persists indefinitely — closing the tab or refreshing won't lose anything.<br/>Between sprints, Export a snapshot below, paste it somewhere safe, then Import it into the next sprint's board.</div>`;
   panel.appendChild(info);
+
+  // Sprint number control
+  const sprintBox = document.createElement("div");
+  sprintBox.style.cssText = "background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px 24px;margin-bottom:16px";
+  sprintBox.innerHTML = `
+    <div style="font-size:15px;font-weight:800;color:#f1f5f9;margin-bottom:6px">⚙️ Sprint Number</div>
+    <div style="font-size:13px;color:#64748b;margin-bottom:14px">Sets the sprint number shown in the header and used in exports. Also changes the Firebase data path — <strong style="color:#f59e0b">change this at the start of each new sprint</strong> to start with a clean slate (previous sprint data is preserved under its own path).</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:13px;color:#94a3b8">Current sprint:</span>
+      <input id="sprint-num-input" type="number" value="${sprintNum}" min="1" max="999"
+        style="width:80px;background:#0f172a;border:1.5px solid #334155;border-radius:8px;padding:7px 12px;font-size:16px;font-weight:800;color:#f59e0b;outline:none;text-align:center"/>
+      <button onclick="applySprintNum()" style="background:#f59e0b;color:#020617;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:800">Apply</button>
+      <span id="sprint-num-ok" style="font-size:12px;color:#4ade80;display:none">✓ Updated for everyone</span>
+    </div>`;
+  panel.appendChild(sprintBox);
 
   // Export
   const exportBox = document.createElement("div");
