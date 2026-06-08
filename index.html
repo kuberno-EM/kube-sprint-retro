@@ -343,17 +343,17 @@ function setPrevActionStatus(idx, done) {
 }
 
 /* ─── EXPORT / IMPORT ───────────────────────────────────────── */
-function handleExport() {
-  const payload = {
-    exportedFrom: `Sprint ${sprintNum}`,
+function buildExportPayload() {
+  return {
+    exportedFrom: "Sprint " + sprintNum,
     exportedAt: new Date().toISOString(),
     previousActions: prevActions.map(a=>({text:a.text,owner:a.owner,done:a.done})),
     healthResults: Object.fromEntries(
       HEALTH_CATS.map(cat=>{
         const v = healthVotes[cat.id]||{red:0,amber:0,green:0};
         const total = v.red+v.amber+v.green;
-        const dominant = total>0 ? ["red","amber","green"].reduce((a,b)=>v[a]>=v[b]?a:b) : cat.prev;
-        return [cat.id, {label:cat.label, dominant, votes:v}];
+        const dom = total>0 ? ["red","amber","green"].reduce((a,b)=>v[a]>=v[b]?a:b) : cat.prev;
+        return [cat.id, {label:cat.label, dominant:dom, votes:v}];
       })
     ),
     nextSprintVotes: Object.fromEntries(NEXT_VOTES_DEF.map(o=>[o.id,{label:o.label,count:nextVotes[o.id]||0}])),
@@ -366,6 +366,10 @@ function handleExport() {
     wins: celebrate.map(w=>w.text),
     retroActions: actions.map(a=>({text:a.text,owner:a.owner})),
   };
+}
+
+function handleExport() {
+  const payload = buildExportPayload();
   navigator.clipboard.writeText(JSON.stringify(payload,null,2)).then(()=>{
     const btn = document.getElementById("export-btn");
     if(btn){btn.textContent="✓ Copied to clipboard!";btn.style.background="#14532d";btn.style.color="#86efac";}
@@ -502,9 +506,9 @@ function handleClearAll() {
   myMoodVote    = null;
   myHealthVotes = {};
   myNextVotes   = {};
-  localStorage.removeItem('s55:myMood');
-  localStorage.removeItem('s55:myHealth');
-  localStorage.removeItem('s55:myNext');
+  localStorage.removeItem("s"+sprintNum+":myMood");
+  localStorage.removeItem("s"+sprintNum+":myHealth");
+  localStorage.removeItem("s"+sprintNum+":myNext");
   render(false);
 }
 
