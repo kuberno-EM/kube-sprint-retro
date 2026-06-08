@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sprint 55 — Review Board 🖖</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Trebuchet MS',Verdana,sans-serif;background:#0f172a;min-height:100vh;color:#f1f5f9}
+  button{font-family:inherit;cursor:pointer}
+  input,textarea{font-family:inherit}
+  @keyframes popIn{0%{transform:scale(.5) rotate(-4deg);opacity:0}70%{transform:scale(1.08) rotate(1deg);opacity:1}100%{transform:scale(1) rotate(var(--rot,0deg));opacity:1}}
+  @keyframes barGrow{from{width:0}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .note-card{animation:popIn .45s cubic-bezier(.34,1.56,.64,1) both}
+  .bar-fill{animation:barGrow .6s ease both}
+  .fade-up{animation:fadeUp .35s ease both}
+  .tab-btn{border:none;padding:11px 20px;font-size:13px;font-weight:500;letter-spacing:.02em;white-space:nowrap;transition:all .18s;background:transparent;color:#64748b}
+  .tab-btn.active{background:#f59e0b;color:#020617;font-weight:800}
+  table{width:100%;border-collapse:collapse}
+  th{padding:10px 16px;text-align:left;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.1em}
+  th.center{text-align:center}
+  td{padding:13px 16px;font-size:14px}
+  tr{border-bottom:1px solid #1e293b;transition:background .3s}
+  .act-input{width:100%;background:#0f172a;border:1.5px solid #334155;border-radius:8px;padding:7px 10px;font-size:13px;color:#f1f5f9;outline:none}
+  ::-webkit-scrollbar{height:4px;width:4px}
+  ::-webkit-scrollbar-track{background:#1e293b}
+  ::-webkit-scrollbar-thumb{background:#334155;border-radius:2px}
+</style>
+</head>
+<body>
+
+<div id="loading" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:16px">
+  <div style="font-size:36px">🖖</div>
+  <div style="font-size:16px;color:#64748b">Connecting to Firebase…</div>
+  <div style="width:32px;height:32px;border:3px solid #334155;border-top-color:#f59e0b;border-radius:50%;animation:spin 0.8s linear infinite"></div>
+</div>
+
+<div id="app" style="display:none">
+
+  <!-- HEADER -->
+  <div id="header" style="background:#020617;border-bottom:2px solid #f59e0b;padding:14px 28px;display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <div style="font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:#f59e0b;margin-bottom:3px">Agile Ceremony</div>
+      <div style="font-size:20px;font-weight:800;letter-spacing:-.03em">Sprint 55 — Review Board 🖖</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:20px">
+      <div style="display:flex;align-items:center;gap:6px">
+        <div id="sync-dot" style="width:7px;height:7px;border-radius:50%;background:#f59e0b;animation:pulse 2s infinite"></div>
+        <span id="sync-label" style="font-size:11px;color:#475569">Connecting…</span>
+      </div>
+      <div style="text-align:right;font-size:12px;color:#64748b">
+        <div id="header-actions" style="color:#f59e0b;font-weight:700"></div>
+        <div id="header-date"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <div style="display:flex;background:#020617;padding:0 28px;gap:2px;overflow-x:auto;border-bottom:1px solid #1e293b">
+    <button class="tab-btn active" onclick="setTab('checkin')">👋 Check-in</button>
+    <button class="tab-btn" onclick="setTab('mood')">🧠 Mood</button>
+    <button class="tab-btn" onclick="setTab('health')">📊 Ship Systems</button>
+    <button class="tab-btn" onclick="setTab('wins')">🎉 Wins</button>
+    <button class="tab-btn" onclick="setTab('retro')">🔁 Retro</button>
+    <button class="tab-btn" onclick="setTab('next')">🗳️ Next Sprint</button>
+    <button class="tab-btn" onclick="setTab('export')">📦 Export / Import</button>
+  </div>
+
+  <!-- CONTENT -->
+  <div style="padding:24px 28px;max-width:1140px;margin:0 auto" id="content"></div>
+
+</div>
+
+<script>
+/* ─── FIREBASE INIT ─────────────────────────────────────────── */
+const firebaseConfig = {
+  apiKey: "AIzaSyD0qze_jJwTXLfdoiO3GqrvsEeR-aeUm8w",
+  authDomain: "kube-sprint-retro.firebaseapp.com",
+  databaseURL: "https://kube-sprint-retro-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "kube-sprint-retro",
+  storageBucket: "kube-sprint-retro.firebasestorage.app",
+  messagingSenderId: "928764561683",
+  appId: "1:928764561683:web:716ce06af6a09406cb32e6"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const SPRINT = "s55";
+const ref = (path) => db.ref(`sprints/${SPRINT}/${path}`);
+
+/* ─── STATIC DATA ───────────────────────────────────────────── */
+const HEALTH_CATS = [
+  {id:"team-split", label:"Team split effectiveness",   prev:"amber"},
+  {id:"knowledge",  label:"Knowledge sharing",           prev:"green"},
+  {id:"collab",     label:"Collaboration",               prev:"green"},
+  {id:"quality",    label:"Product quality",             prev:"red"},
+  {id:"delivery",   label:"Delivery speed",              prev:"amber"},
+  {id:"meetings",   label:"Meeting productivity",        prev:"red"},
+  {id:"estimation", label:"Estimation accuracy",         prev:"amber"},
+  {id:"learning",   label:"Learning & skill development",prev:"amber"},
+  {id:"recognition",label:"Recognition & appreciation", prev:"red"},
+  {id:"morale",     label:"Morale & motivation",        prev:"red"},
+  {id:"priority",   label:"Priority clarity",            prev:"amber"},
+  {id:"tech-debt",  label:"Technical debt management",  prev:"amber"},
+];
+const STATUS = {
+  red:  {label:"Needs attention",emoji:"🔴",fill:"#fca5a5",border:"#ef4444"},
+  amber:{label:"Could be better", emoji:"🟡",fill:"#fde68a",border:"#f59e0b"},
+  green:{label:"All good",        emoji:"🟢",fill:"#86efac",border:"#22c55e"},
+};
+const MOODS = [
+  {id:"excited", emoji:"🌟",label:"Rebel victory!",        col:"#4ade80"},
+  {id:"happy",   emoji:"😄",label:"Chewie, we're home",    col:"#86efac"},
+  {id:"focused", emoji:"🔵",label:"Trust in the Force",    col:"#a3e635"},
+  {id:"meh",     emoji:"😐",label:"I've got a bad feeling",col:"#fde047"},
+  {id:"stressed",emoji:"⚡",label:"Order 66 incoming",     col:"#fb923c"},
+  {id:"angry",   emoji:"🔴",label:"Fully turned Sith",     col:"#f87171"},
+  {id:"ghost",   emoji:"💀",label:"I am your father...",   col:"#94a3b8"},
+];
+const NOTE_COLS = [
+  {id:"well", label:"✅ What went well?",      bg:"#fefce8",border:"#fde047",accent:"#ca8a04"},
+  {id:"bad",  label:"😬 What didn't go well?", bg:"#fdf2f8",border:"#f0abfc",accent:"#a21caf"},
+  {id:"ideas",label:"💡 Ideas & proposals",    bg:"#f0fdf4",border:"#86efac",accent:"#15803d"},
+];
+const PROMPTS = {
+  well: ["What's worth putting in the captain's log?"],
+  bad:  ["What slowed us down the most?"],
+  ideas:["One experiment worth trying next sprint?"],
+};
+const NEXT_VOTES_DEF = [
+  {id:"format-keep", label:"Keep the same retro format",                              emoji:"🔁"},
+  {id:"format-nuke", label:"Back to the drawing board",                               emoji:"💥"},
+  {id:"shorter",     label:"Make the session shorter",                                emoji:"⏱️"},
+  {id:"longer",      label:"Give us more time",                                       emoji:"⏳"},
+  {id:"too-much-borg",label:"Too much Borg use",                                      emoji:"🤖"},
+  {id:"fire-emmett", label:"Emmett did a bad job and should never be allowed to do it again",emoji:"😬"},
+];
+const NOTE_ROTS = [-2,1.5,-1,2.5,-1.5,1,-2.5,0.5];
+
+/* ─── STATE ─────────────────────────────────────────────────── */
+// Shared (from Firebase)
+let moodVotes    = {};
+let healthVotes  = {};
+let notes        = {well:[],bad:[],ideas:[]};
+let celebrate    = [];
+let actions      = [];
+let prevActions  = [];
+let nextVotes    = {};
+let importedHealth = null;
+
+// Local (this browser session — prevents double-voting)
+const LS = {
+  get:(k)=>{ try{return JSON.parse(localStorage.getItem('s55:'+k))}catch{return null} },
+  set:(k,v)=>{ try{localStorage.setItem('s55:'+k,JSON.stringify(v))}catch{} }
+};
+let myMoodVote    = LS.get('myMood') || null;
+let myHealthVotes = LS.get('myHealth') || {};
+let myNextVotes   = LS.get('myNext') || {};
+
+let currentTab = "checkin";
+let connected  = false;
+
+/* ─── FIREBASE LISTENERS ────────────────────────────────────── */
+function initListeners() {
+  ref("moodVotes").on("value",    s=>{ moodVotes   = s.val()||{}; render(false); updateHeader(); });
+  ref("healthVotes").on("value",  s=>{ healthVotes = s.val()||{}; render(false); });
+  ref("notes").on("value",        s=>{ notes       = s.val()||{well:[],bad:[],ideas:[]}; render(false); });
+  ref("celebrate").on("value",    s=>{ celebrate   = objToArr(s.val()); render(false); });
+  ref("actions").on("value",      s=>{ actions     = objToArr(s.val()); render(false); });
+  ref("prevActions").on("value",  s=>{ prevActions = objToArr(s.val()); render(false); updateHeader(); });
+  ref("nextVotes").on("value",    s=>{ nextVotes   = s.val()||{}; render(false); });
+  ref("importedHealth").on("value",s=>{ importedHealth = s.val()||null; render(false); });
+
+  db.ref(".info/connected").on("value", s=>{
+    connected = s.val();
+    const dot   = document.getElementById("sync-dot");
+    const label = document.getElementById("sync-label");
+    if(dot){dot.style.background = connected ? "#4ade80" : "#f87171";}
+    if(label){label.textContent  = connected ? "Live · Firebase" : "Reconnecting…";}
+  });
+}
+
+// Firebase stores arrays as objects with numeric keys — convert back
+function objToArr(obj) {
+  if(!obj) return [];
+  if(Array.isArray(obj)) return obj;
+  return Object.values(obj);
+}
+
+/* ─── WRITE HELPERS ─────────────────────────────────────────── */
+const fw = (path, val) => ref(path).set(val);
+
+/* ─── VOTE HANDLERS ─────────────────────────────────────────── */
+function castMoodVote(id) {
+  const prev = myMoodVote;
+  if(prev === id) return;
+  const updated = {...moodVotes, [id]:(moodVotes[id]||0)+1};
+  if(prev) updated[prev] = Math.max(0,(updated[prev]||1)-1);
+  myMoodVote = id;
+  LS.set('myMood', id);
+  fw("moodVotes", updated);
+}
+
+function castHealthVote(catId, status) {
+  const prev = myHealthVotes[catId];
+  if(prev === status) return;
+  const cat = healthVotes[catId] || {red:0,amber:0,green:0};
+  const upCat = {...cat, [status]:cat[status]+1};
+  if(prev) upCat[prev] = Math.max(0, upCat[prev]-1);
+  const upAll = {...healthVotes, [catId]:upCat};
+  myHealthVotes = {...myHealthVotes, [catId]:status};
+  LS.set('myHealth', myHealthVotes);
+  fw("healthVotes", upAll);
+}
+
+function castNextVote(id) {
+  const already = myNextVotes[id];
+  const count   = Object.keys(myNextVotes).length;
+  let upNV, upMy;
+  if(already) {
+    upNV = {...nextVotes, [id]:Math.max(0,(nextVotes[id]||1)-1)};
+    upMy = {...myNextVotes}; delete upMy[id];
+  } else {
+    if(count >= 3) return;
+    upNV = {...nextVotes, [id]:(nextVotes[id]||0)+1};
+    upMy = {...myNextVotes, [id]:true};
+  }
+  myNextVotes = upMy;
+  LS.set('myNext', upMy);
+  fw("nextVotes", upNV);
+}
+
+function addNote(col) {
+  const input = document.getElementById("note-input-"+col);
+  const v = (input?.value||"").trim();
+  if(!v) return;
+  const id = Date.now();
+  const colNotes = Array.isArray(notes[col]) ? notes[col] : [];
+  const updated  = {...notes, [col]:[...colNotes, {id,text:v,votes:0}]};
+  fw("notes", updated);
+  input.value = "";
+}
+
+function upvoteNote(col, id) {
+  const colNotes = Array.isArray(notes[col]) ? notes[col] : [];
+  const updated = {
+    ...notes,
+    [col]: [...colNotes]
+      .map(n => n.id===id ? {...n, votes:n.votes+1} : n)
+      .sort((a,b)=>b.votes-a.votes)
+  };
+  fw("notes", updated);
+}
+
+function addCelebrate() {
+  const input = document.getElementById("cel-input");
+  const v = (input?.value||"").trim();
+  if(!v) return;
+  const id = Date.now();
+  const updated = [...celebrate, {id,text:v}];
+  fw("celebrate", updated);
+  input.value = "";
+}
+
+function addAction() {
+  const t = document.getElementById("act-text");
+  const o = document.getElementById("act-owner");
+  if(!(t?.value||"").trim()) return;
+  const updated = [...actions, {id:Date.now(), text:t.value.trim(), owner:o.value.trim()}];
+  fw("actions", updated);
+  t.value = ""; o.value = "";
+}
+
+function removeAction(id) {
+  fw("actions", actions.filter(a=>a.id!==id));
+}
+
+function setPrevActionStatus(idx, done) {
+  const updated = prevActions.map((a,i)=>i===idx?{...a,done}:a);
+  fw("prevActions", updated);
+}
+
+/* ─── EXPORT / IMPORT ───────────────────────────────────────── */
+function handleExport() {
+  const payload = {
+    exportedFrom: "Sprint 55",
+    exportedAt: new Date().toISOString(),
+    previousActions: prevActions.map(a=>({text:a.text,owner:a.owner,done:a.done})),
+    healthResults: Object.fromEntries(
+      HEALTH_CATS.map(cat=>{
+        const v = healthVotes[cat.id]||{red:0,amber:0,green:0};
+        const total = v.red+v.amber+v.green;
+        const dominant = total>0 ? ["red","amber","green"].reduce((a,b)=>v[a]>=v[b]?a:b) : cat.prev;
+        return [cat.id, {label:cat.label, dominant, votes:v}];
+      })
+    ),
+    nextSprintVotes: Object.fromEntries(NEXT_VOTES_DEF.map(o=>[o.id,{label:o.label,count:nextVotes[o.id]||0}])),
+    moodSummary: Object.fromEntries(MOODS.map(m=>[m.id,{label:m.label,count:moodVotes[m.id]||0}])),
+    retroNotes: {
+      well:  (notes.well||[]).map(n=>({text:n.text,votes:n.votes})),
+      bad:   (notes.bad||[]).map(n=>({text:n.text,votes:n.votes})),
+      ideas: (notes.ideas||[]).map(n=>({text:n.text,votes:n.votes})),
+    },
+    wins: celebrate.map(w=>w.text),
+    retroActions: actions.map(a=>({text:a.text,owner:a.owner})),
+  };
+  navigator.clipboard.writeText(JSON.stringify(payload,null,2)).then(()=>{
+    const btn = document.getElementById("export-btn");
+    if(btn){btn.textContent="✓ Copied to clipboard!";btn.style.background="#14532d";btn.style.color="#86efac";}
+    setTimeout(()=>{if(btn){btn.textContent="📋 Copy sprint data to clipboard";btn.style.background="#f59e0b";btn.style.color="#020617";}},3000);
+  });
+}
+
+function handleImport() {
+  const ta = document.getElementById("import-ta");
+  const errEl = document.getElementById("import-err");
+  const okEl  = document.getElementById("import-ok");
+  errEl.textContent=""; okEl.textContent="";
+  try {
+    const data = JSON.parse((ta?.value||"").trim());
+    const newPrev = (data.retroActions||[]).map(a=>({text:a.text,owner:a.owner,done:false}));
+    const newIH   = data.healthResults||null;
+    fw("prevActions", newPrev);
+    if(newIH) fw("importedHealth", newIH);
+    ta.value = "";
+    okEl.textContent = "✓ Previous sprint loaded — health baselines and actions updated for everyone.";
+    setTab("checkin");
+  } catch(e) {
+    errEl.textContent = "⚠️ Couldn't parse that — make sure you paste the full export JSON.";
+  }
+}
+
+function handleClearAll() {
+  if(!confirm("Reset ALL shared sprint data? This affects everyone on the call.")) return;
+  // Clear Firebase
+  fw("moodVotes",{});
+  fw("healthVotes",{});
+  fw("notes",{well:[],bad:[],ideas:[]});
+  fw("celebrate",[]);
+  fw("actions",[]);
+  fw("prevActions",[]);
+  fw("nextVotes",{});
+  fw("importedHealth",null);
+  // Also clear this browser's local vote memory so the person can vote fresh
+  myMoodVote    = null;
+  myHealthVotes = {};
+  myNextVotes   = {};
+  localStorage.removeItem('s55:myMood');
+  localStorage.removeItem('s55:myHealth');
+  localStorage.removeItem('s55:myNext');
+  render(false);
+}
+
+/* ─── HELPERS ───────────────────────────────────────────────── */
+function dominant(catId) {
+  const c = healthVotes[catId];
+  if(!c) return null;
+  const total = c.red+c.amber+c.green;
+  if(total===0) return null;
+  return ["red","amber","green"].reduce((a,b)=>c[a]>=c[b]?a:b);
+}
+function trendOf(prev,curr) {
+  if(!curr) return null;
+  const o={red:0,amber:1,green:2};
+  const d=o[curr]-o[prev];
+  return d>0?{icon:"↑",color:"#16a34a"}:d<0?{icon:"↓",color:"#dc2626"}:{icon:"→",color:"#94a3b8"};
+}
+function h(tag,attrs,children){
+  const el=document.createElement(tag);
+  Object.entries(attrs||{}).forEach(([k,v])=>{
+    if(k==="style"&&typeof v==="object") Object.assign(el.style,v);
+    else if(k.startsWith("on"))          el.addEventListener(k.slice(2).toLowerCase(),v);
+    else el.setAttribute(k,v);
+  });
+  (Array.isArray(children)?children:[children]).forEach(c=>{
+    if(c==null||c===false) return;
+    el.appendChild(typeof c==="string"?document.createTextNode(c):c);
+  });
+  return el;
+}
+function div(style,children){return h("div",{style},Array.isArray(children)?children:[children]);}
+
+/* ─── TAB SWITCHER ──────────────────────────────────────────── */
+function setTab(id) {
+  currentTab = id;
+  document.querySelectorAll(".tab-btn").forEach(b=>{
+    b.classList.toggle("active", b.textContent.toLowerCase().includes(
+      {checkin:"check",mood:"mood",health:"ship",wins:"wins",retro:"retro",next:"next",export:"export"}[id]
+    ));
+  });
+  render(true);
+}
+
+/* ─── HEADER UPDATE ─────────────────────────────────────────── */
+function updateHeader() {
+  const ha = document.getElementById("header-actions");
+  const hd = document.getElementById("header-date");
+  if(ha) ha.textContent = `✅ ${prevActions.filter(a=>a.done).length}/${prevActions.length} previous actions`;
+  if(hd) hd.textContent = new Date().toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
+}
+
+/* ─── RENDER ────────────────────────────────────────────────── */
+function render(animate) {
+  const content = document.getElementById("content");
+  if(!content) return;
+  content.innerHTML = "";
+  const panel = document.createElement("div");
+  if(animate) panel.className = "fade-up";
+
+  switch(currentTab) {
+    case "checkin": renderCheckin(panel); break;
+    case "mood":    renderMood(panel);    break;
+    case "health":  renderHealth(panel);  break;
+    case "wins":    renderWins(panel);    break;
+    case "retro":   renderRetro(panel);   break;
+    case "next":    renderNext(panel);    break;
+    case "export":  renderExport(panel);  break;
+  }
+
+  content.appendChild(panel);
+}
+
+/* ─── SECTION HEAD ──────────────────────────────────────────── */
+function sectionHead(title, sub) {
+  const wrap = document.createElement("div");
+  wrap.style.marginBottom = "22px";
+  const t = document.createElement("h2");
+  t.style.cssText = "font-size:21px;font-weight:900;margin:0;letter-spacing:-.03em;color:#f1f5f9";
+  t.textContent = title;
+  wrap.appendChild(t);
+  if(sub) {
+    const s = document.createElement("p");
+    s.style.cssText = "margin:5px 0 0;font-size:13px;color:#64748b";
+    s.textContent = sub;
+    wrap.appendChild(s);
+  }
+  return wrap;
+}
+function tip(text) {
+  const d = document.createElement("div");
+  d.style.cssText = "margin-top:16px;background:#1e293b;border:1px solid #fde68a;border-radius:10px;padding:12px 16px;font-size:13px;color:#fde68a;display:flex;gap:10px;align-items:flex-start";
+  d.innerHTML = `<span>💡</span><div><strong>Facilitator tip: </strong>${text}</div>`;
+  return d;
+}
+
+/* ═══ CHECK-IN ══════════════════════════════════════════════ */
+function renderCheckin(panel) {
+  panel.appendChild(sectionHead("Previous Actions","How did the team do on commitments from last sprint?"));
+
+  if(prevActions.length === 0) {
+    const empty = document.createElement("div");
+    empty.style.cssText = "background:#1e293b;border:1px dashed #334155;border-radius:12px;padding:40px 24px;text-align:center;color:#475569";
+    empty.innerHTML = `<div style="font-size:32px;margin-bottom:10px">📋</div><div style="font-size:14px;margin-bottom:8px">No previous actions loaded yet.</div><div style="font-size:12px">Import last sprint's data from the <strong style="color:#f59e0b">Export / Import</strong> tab.</div>`;
+    panel.appendChild(empty);
+    return;
+  }
+
+  const done = prevActions.filter(a=>a.done).length;
+  const total = prevActions.length;
+  const pct = total > 0 ? (done/total)*100 : 0;
+  const isAll = done === total;
+
+  // progress bar
+  const prog = document.createElement("div");
+  prog.style.cssText = "background:#1e293b;border-radius:10px;padding:14px 18px;margin-bottom:16px;border:1px solid #334155;display:flex;align-items:center;gap:16px";
+  prog.innerHTML = `
+    <div style="flex:1">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span style="font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em">Completion</span>
+        <span style="font-size:13px;font-weight:800;color:${isAll?"#4ade80":"#f59e0b"}">${done} / ${total} done</span>
+      </div>
+      <div style="height:8px;background:#0f172a;border-radius:4px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${isAll?"#4ade80":"#f59e0b"};border-radius:4px;transition:width .4s ease"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <span style="font-size:13px;color:#4ade80;font-weight:700">✓ ${done} done</span>
+      <span style="font-size:13px;color:#f87171;font-weight:700">✗ ${total-done} missed</span>
+    </div>`;
+  panel.appendChild(prog);
+
+  // table
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "background:#1e293b;border-radius:12px;overflow:hidden;border:1px solid #334155";
+  let rows = "";
+  prevActions.forEach((a,i)=>{
+    const bg = a.done ? "#14532d18" : "#7f1d1d18";
+    rows += `<tr style="background:${bg}">
+      <td style="padding:13px 16px;font-size:14px">${a.text||""}</td>
+      <td style="padding:13px 16px;font-size:13px;color:#94a3b8">${a.owner||""}</td>
+      <td style="padding:13px 16px;text-align:center">
+        <div style="display:inline-flex;border-radius:8px;overflow:hidden;border:1px solid #334155">
+          <button onclick="setPrevActionStatus(${i},true)" style="padding:5px 14px;font-size:12px;font-weight:700;border:none;background:${a.done?"#14532d":"#1e293b"};color:${a.done?"#4ade80":"#475569"};transition:all .18s">✓ Done</button>
+          <button onclick="setPrevActionStatus(${i},false)" style="padding:5px 14px;font-size:12px;font-weight:700;border:none;border-left:1px solid #334155;background:${a.done===false?"#7f1d1d":"#1e293b"};color:${a.done===false?"#f87171":"#475569"};transition:all .18s">✗ Missed</button>
+        </div>
+      </td>
+    </tr>`;
+  });
+  wrap.innerHTML = `<table><thead><tr style="background:#0f172a;border-bottom:1px solid #334155"><th>Action</th><th>Owner</th><th class="center">Status</th></tr></thead><tbody>${rows}</tbody></table>`;
+  panel.appendChild(wrap);
+  panel.appendChild(tip("Missed actions aren't a court martial — understand what got in the way, then move on."));
+}
+
+/* ═══ MOOD ══════════════════════════════════════════════════ */
+function renderMood(panel) {
+  panel.appendChild(sectionHead("How's the room feeling?","Tap your mood — you can change it any time before we move on"));
+  const totalMood = Object.values(moodVotes).reduce((a,b)=>a+b,0);
+
+  const grid = document.createElement("div");
+  grid.style.cssText = "display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:16px";
+  MOODS.forEach(m=>{
+    const count = moodVotes[m.id]||0;
+    const pct   = totalMood>0?(count/totalMood)*100:0;
+    const isMy  = myMoodVote===m.id;
+    const btn   = document.createElement("button");
+    btn.style.cssText = `background:${isMy?m.col+"33":count>0?m.col+"11":"#1e293b"};border:2px solid ${isMy?m.col:count>0?m.col+"55":"#334155"};border-radius:14px;padding:14px 8px 10px;transition:all .2s;text-align:center;position:relative;overflow:hidden;box-shadow:${isMy?`0 0 12px ${m.col}66`:"none"};transform:${isMy?"scale(1.05)":"scale(1)"}`;
+    btn.innerHTML = `
+      ${count>0?`<div style="position:absolute;bottom:0;left:0;right:0;height:${pct}%;background:${m.col}22;transition:height .4s ease"></div>`:""}
+      <div style="font-size:28px;margin-bottom:5px">${m.emoji}</div>
+      <div style="font-size:11px;font-weight:${isMy?800:700};color:${isMy?m.col:count>0?m.col+"cc":"#94a3b8"}">${m.label}</div>
+      ${count>0?`<div style="font-size:16px;font-weight:900;color:${m.col};margin-top:4px">${count}</div>`:""}
+      ${isMy?`<div style="font-size:9px;color:${m.col};margin-top:3px;letter-spacing:.05em;text-transform:uppercase;font-weight:800">Your vote</div>`:""}`;
+    btn.onclick = ()=>castMoodVote(m.id);
+    grid.appendChild(btn);
+  });
+  panel.appendChild(grid);
+
+  if(myMoodVote) {
+    const hint = document.createElement("div");
+    hint.style.cssText = "font-size:12px;color:#475569;text-align:center;margin-bottom:16px";
+    hint.textContent = "Tap a different mood to change your vote";
+    panel.appendChild(hint);
+  }
+
+  if(totalMood > 0) {
+    const bar = document.createElement("div");
+    bar.style.cssText = "background:#1e293b;border-radius:10px;padding:16px 20px;border:1px solid #334155";
+    const moods = MOODS.filter(m=>moodVotes[m.id]);
+    bar.innerHTML = `
+      <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">Live mood — ${totalMood} votes</div>
+      <div style="display:flex;height:38px;border-radius:8px;overflow:hidden;gap:2px">
+        ${moods.map(m=>{const p=(moodVotes[m.id]/totalMood)*100;return `<div class="bar-fill" title="${m.label}:${moodVotes[m.id]}" style="background:${m.col};width:${p}%;display:flex;align-items:center;justify-content:center;font-size:18px;min-width:2px;transition:width .4s ease">${p>8?m.emoji:""}</div>`;}).join("")}
+      </div>
+      <div style="display:flex;gap:12px;margin-top:10px;flex-wrap:wrap">
+        ${moods.map(m=>`<span style="font-size:12px;color:${m.col}">${m.emoji} ${m.label} · ${Math.round((moodVotes[m.id]/totalMood)*100)}%</span>`).join("")}
+      </div>`;
+    panel.appendChild(bar);
+  }
+}
+
+/* ═══ HEALTH ════════════════════════════════════════════════ */
+function renderHealth(panel) {
+  panel.appendChild(sectionHead("🚀 Ship Systems","Everyone votes once per system — results update live across the board"));
+  const myCount = Object.keys(myHealthVotes).length;
+
+  // Legend
+  const leg = document.createElement("div");
+  leg.style.cssText = "display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px";
+  leg.innerHTML = `
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      ${Object.entries(STATUS).map(([k,v])=>`<div style="display:flex;align-items:center;gap:6px;font-size:12px"><div style="width:10px;height:10px;border-radius:2px;background:${v.fill};border:1.5px solid ${v.border}"></div><span style="color:#94a3b8">${v.label}</span></div>`).join("")}
+    </div>
+    <div style="font-size:12px;color:#64748b">${myCount} / ${HEALTH_CATS.length} voted by you${myCount===HEALTH_CATS.length?' <span style="color:#4ade80;font-weight:700">✓ All done!</span>':""}</div>`;
+  panel.appendChild(leg);
+
+  // Heatmap strip
+  const hasVotes = Object.keys(healthVotes).length > 0;
+  if(hasVotes) {
+    const strip = document.createElement("div");
+    strip.style.cssText = "background:#1e293b;padding:12px 16px;border-radius:10px;margin-bottom:20px;border:1px solid #334155";
+    strip.innerHTML = `<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Damage report — dominant reading per system</div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">
+        ${HEALTH_CATS.map(cat=>{
+          const dom = dominant(cat.id);
+          const tot = (healthVotes[cat.id]||{red:0,amber:0,green:0});
+          const t   = tot.red+tot.amber+tot.green;
+          return `<div title="${cat.label} · ${t} votes" style="width:32px;height:32px;border-radius:6px;background:${dom?STATUS[dom].fill:"#334155"};border:1.5px solid ${dom?STATUS[dom].border:"#475569"};display:flex;align-items:center;justify-content:center;font-size:14px;position:relative;transition:all .3s">
+            ${dom?STATUS[dom].emoji:""}
+            ${t>0?`<div style="position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);font-size:9px;color:#64748b;font-weight:700">${t}</div>`:""}
+          </div>`;
+        }).join("")}
+      </div>`;
+    panel.appendChild(strip);
+  }
+
+  // Cards grid
+  const grid = document.createElement("div");
+  grid.style.cssText = "display:grid;grid-template-columns:repeat(3,1fr);gap:12px";
+  HEALTH_CATS.forEach(cat=>{
+    const v     = healthVotes[cat.id]||{red:0,amber:0,green:0};
+    const total = v.red+v.amber+v.green;
+    const myV   = myHealthVotes[cat.id];
+    const dom   = dominant(cat.id);
+    const prevS = importedHealth?.[cat.id]?.dominant || cat.prev;
+    const trend = dom ? trendOf(prevS,dom) : null;
+
+    const card = document.createElement("div");
+    card.style.cssText = `background:${dom?STATUS[dom].fill+"18":"#1e293b"};border:2px solid ${dom?STATUS[dom].border+"88":"#334155"};border-radius:12px;padding:12px 14px;transition:all .3s`;
+
+    const distBar = total>0 ? `
+      <div style="margin-bottom:10px">
+        <div style="display:flex;height:10px;border-radius:5px;overflow:hidden;gap:1px">
+          ${["red","amber","green"].map(s=>{ const p=(v[s]/total)*100; return p>0?`<div class="bar-fill" style="width:${p}%;background:${STATUS[s].fill};border:1px solid ${STATUS[s].border};border-radius:3px" title="${STATUS[s].label}:${v[s]}"></div>`:"";}).join("")}
+        </div>
+        <div style="display:flex;gap:8px;margin-top:5px">
+          ${["red","amber","green"].filter(s=>v[s]>0).map(s=>`<span style="font-size:11px;color:${STATUS[s].border};font-weight:700">${STATUS[s].emoji} ${v[s]} <span style="color:#475569;font-weight:400">(${Math.round((v[s]/total)*100)}%)</span></span>`).join("")}
+        </div>
+      </div>` : "";
+
+    const btns = ["red","amber","green"].map(st=>{
+      const isMy = myV===st;
+      return `<button onclick="castHealthVote('${cat.id}','${st}')" style="flex:1;padding:7px 4px;background:${isMy?STATUS[st].fill:"#0f172a"};border:2px solid ${isMy?STATUS[st].border:"#334155"};border-radius:8px;font-size:16px;transition:all .15s;transform:${isMy?"scale(1.1)":"scale(1)"};box-shadow:${isMy?`0 0 8px ${STATUS[st].border}88`:"none"}" title="${STATUS[st].label}">${STATUS[st].emoji}</button>`;
+    }).join("");
+
+    card.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+        <span style="font-size:13px;font-weight:700;color:#e2e8f0;line-height:1.3;flex:1">${cat.label}</span>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px">
+          ${trend?`<span style="font-size:15px;font-weight:900;color:${trend.color}">${trend.icon}</span>`:""}
+          ${total>0?`<span style="font-size:11px;color:#64748b;font-family:monospace">${total} vote${total!==1?"s":""}</span>`:""}
+        </div>
+      </div>
+      <div style="font-size:11px;color:#64748b;margin-bottom:10px;display:flex;align-items:center;gap:4px">
+        Last sprint:
+        <div style="width:8px;height:8px;border-radius:50%;background:${STATUS[prevS].fill};border:1px solid ${STATUS[prevS].border};margin-left:4px"></div>
+        <span style="color:${STATUS[prevS].border}">${STATUS[prevS].label}</span>
+      </div>
+      ${distBar}
+      <div style="display:flex;gap:6px">${btns}</div>
+      ${myV?`<div style="font-size:11px;text-align:center;margin-top:6px;color:#475569">Your vote: <span style="color:${STATUS[myV].border};font-weight:700">${STATUS[myV].label}</span></div>`:""}`;
+    grid.appendChild(card);
+  });
+  panel.appendChild(grid);
+}
+
+/* ═══ WINS ══════════════════════════════════════════════════ */
+function renderWins(panel) {
+  panel.appendChild(sectionHead("🎉 Wins Wall","Name a win before the retro — they go up on the wall for everyone to see"));
+
+  const inputRow = document.createElement("div");
+  inputRow.style.cssText = "display:flex;gap:10px;margin-bottom:24px";
+  inputRow.innerHTML = `
+    <input id="cel-input" placeholder="Name a win from this sprint..." onkeydown="if(event.key==='Enter')addCelebrate()"
+      style="flex:1;background:#1e293b;border:1.5px solid #334155;border-radius:10px;padding:11px 16px;font-size:14px;color:#f1f5f9;outline:none"/>
+    <button onclick="addCelebrate()" style="background:#f59e0b;color:#020617;border:none;border-radius:10px;padding:0 22px;font-size:14px;font-weight:800">Post 🎉</button>`;
+  panel.appendChild(inputRow);
+
+  if(celebrate.length===0) {
+    const empty = document.createElement("div");
+    empty.style.cssText = "text-align:center;padding:60px 0;color:#475569;font-size:15px";
+    empty.innerHTML = `<div style="font-size:48px;margin-bottom:12px">🌟</div>No wins yet — be the first!`;
+    panel.appendChild(empty);
+    return;
+  }
+
+  const wall = document.createElement("div");
+  wall.style.cssText = "display:flex;flex-wrap:wrap;gap:16px";
+  celebrate.forEach((w,i)=>{
+    const rot = NOTE_ROTS[i%NOTE_ROTS.length];
+    const note = document.createElement("div");
+    note.style.cssText = `--rot:${rot}deg;transform:rotate(${rot}deg);background:#fde047;color:#1c1917;border-radius:4px;padding:16px 18px 24px;font-size:14px;font-weight:600;min-width:140px;max-width:200px;box-shadow:3px 4px 12px rgba(0,0,0,.35);line-height:1.4`;
+    note.innerHTML = `<div style="font-size:20px;margin-bottom:6px">⭐</div>${w.text}`;
+    wall.appendChild(note);
+  });
+  panel.appendChild(wall);
+  panel.appendChild(tip("Read these out loud — take a moment to appreciate what went right before jumping into what didn't."));
+}
+
+/* ═══ RETRO ═════════════════════════════════════════════════ */
+function renderRetro(panel) {
+  panel.appendChild(sectionHead("Sprint Retrospective","Notes appear live as people add them — spot the themes before you start grouping"));
+
+  const grid = document.createElement("div");
+  grid.style.cssText = "display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px";
+
+  NOTE_COLS.forEach(col=>{
+    const colNotes = Array.isArray(notes[col.id]) ? notes[col.id] : [];
+    const colDiv = document.createElement("div");
+    colDiv.style.cssText = `background:#1e293b;border:1.5px solid ${col.border};border-radius:14px;padding:16px;min-height:360px;display:flex;flex-direction:column`;
+
+    let notesHTML = colNotes.length===0
+      ? `<div style="text-align:center;padding:24px 0;color:#475569;font-size:13px">Notes will appear here live ✨</div>`
+      : colNotes.map((n,i)=>{
+          const isTop = n.votes>0&&i===0;
+          return `<div style="background:${isTop?col.accent+"22":col.bg};border:${isTop?2:1}px solid ${isTop?col.accent:col.border};border-radius:8px;padding:9px 10px 9px 12px;font-size:13px;color:#1c1917;font-weight:${isTop?700:500};box-shadow:${isTop?`0 0 0 2px ${col.accent}44,0 2px 8px rgba(0,0,0,.18)`:"0 2px 6px rgba(0,0,0,.15)"};line-height:1.4;display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            ${isTop?`<span style="font-size:12px;flex-shrink:0">🔥</span>`:""}
+            <span style="flex:1">${n.text}</span>
+            <button onclick="upvoteNote('${col.id}',${n.id})" style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:1px;background:${n.votes>0?col.accent+"22":"rgba(255,255,255,.5)"};border:1.5px solid ${n.votes>0?col.accent:"rgba(0,0,0,.12)"};border-radius:7px;padding:4px 7px;min-width:34px;color:inherit">
+              <span style="font-size:11px;line-height:1">▲</span>
+              <span style="font-size:12px;font-weight:800;color:${n.votes>0?col.accent:"#64748b"};line-height:1;margin-top:1px">${n.votes}</span>
+            </button>
+          </div>`;
+        }).join("");
+
+    colDiv.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-weight:800;font-size:14px;color:#f1f5f9">${col.label}</span>
+        <span style="background:${col.border}44;color:${col.accent};border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700">${colNotes.length}</span>
+      </div>
+      <div style="font-size:12px;font-style:italic;color:#64748b;border-left:3px solid ${col.accent};padding-left:10px;margin-bottom:14px;line-height:1.5">${PROMPTS[col.id][0]}</div>
+      <div style="flex:1">${notesHTML}</div>
+      <div style="display:flex;gap:6px;margin-top:auto;padding-top:8px">
+        <input id="note-input-${col.id}" placeholder="Add note — press Enter" onkeydown="if(event.key==='Enter')addNote('${col.id}')"
+          style="flex:1;background:#0f172a;border:1.5px solid ${col.border};border-radius:8px;padding:8px 11px;font-size:13px;color:#f1f5f9;outline:none"/>
+        <button onclick="addNote('${col.id}')" style="background:${col.accent};color:#fff;border:none;border-radius:8px;padding:0 13px;font-size:18px;font-weight:800">+</button>
+      </div>`;
+    grid.appendChild(colDiv);
+  });
+  panel.appendChild(grid);
+
+  // Summary strip
+  const totalNotes = (notes.well||[]).length+(notes.bad||[]).length+(notes.ideas||[]).length;
+  if(totalNotes>=3) {
+    const summary = document.createElement("div");
+    summary.style.cssText = "background:#1e293b;border:1px solid #334155;border-radius:12px;padding:16px 20px;margin-bottom:24px";
+    summary.innerHTML = `
+      <div style="font-size:13px;font-weight:700;color:#f59e0b;margin-bottom:12px;text-transform:uppercase;letter-spacing:.08em">📡 ${totalNotes} signals across 3 channels</div>
+      <div style="display:flex;gap:8px">
+        ${NOTE_COLS.map(col=>{
+          const cn = Array.isArray(notes[col.id])?notes[col.id]:[];
+          const tv = cn.reduce((s,n)=>s+n.votes,0);
+          const top = [...cn].sort((a,b)=>b.votes-a.votes)[0];
+          return `<div style="flex:1;background:#0f172a;border-radius:8px;padding:12px 14px;border:1px solid ${col.border}33">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+              <div style="font-size:22px;font-weight:900;color:${col.accent}">${cn.length}</div>
+              ${tv>0?`<div style="font-size:12px;color:${col.accent};font-weight:700">▲ ${tv}</div>`:""}
+            </div>
+            <div style="font-size:11px;color:#64748b;margin-bottom:6px">${col.label.split(" ").slice(1).join(" ")}</div>
+            ${top&&top.votes>0?`<div style="font-size:11px;color:#94a3b8;font-style:italic;border-top:1px solid ${col.border}44;padding-top:6px;line-height:1.4">🔥 "${top.text.length>40?top.text.slice(0,40)+"…":top.text}"</div>`:""}
+            <div style="margin-top:8px;height:3px;border-radius:2px;background:${col.border};opacity:${0.4+(cn.length/(totalNotes+.001))*.5}"></div>
+          </div>`;
+        }).join("")}
+      </div>`;
+    panel.appendChild(summary);
+  }
+
+  // Actions table
+  const actWrap = document.createElement("div");
+  actWrap.innerHTML = `<div style="font-size:15px;font-weight:800;color:#f1f5f9;margin-bottom:12px">🎯 Actions — who's picking it up?</div>`;
+  const tWrap = document.createElement("div");
+  tWrap.style.cssText = "background:#1e293b;border:1.5px solid #3b82f6;border-radius:12px;overflow:hidden";
+  let actRows = actions.map(a=>`
+    <tr style="border-bottom:1px solid #1e293b">
+      <td style="padding:11px 14px;font-size:14px">${a.text}</td>
+      <td style="padding:11px 14px;font-size:13px;color:#60a5fa;font-weight:600">${a.owner||""}</td>
+      <td style="padding:11px 14px"><button onclick="removeAction(${a.id})" style="background:none;border:none;color:#475569;font-size:14px">✕</button></td>
+    </tr>`).join("");
+  tWrap.innerHTML = `<table>
+    <thead><tr style="background:#0f172a;border-bottom:1px solid #1e3a5f">
+      <th>Action</th><th style="width:150px">Owner</th><th style="width:60px"></th>
+    </tr></thead>
+    <tbody>
+      ${actRows}
+      <tr>
+        <td style="padding:8px 14px"><input id="act-text" class="act-input" placeholder="Describe the action…"/></td>
+        <td style="padding:8px 8px"><input id="act-owner" class="act-input" placeholder="Owner"/></td>
+        <td style="padding:8px 8px"><button onclick="addAction()" style="background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-weight:700;font-size:13px">Add</button></td>
+      </tr>
+    </tbody>
+  </table>`;
+  actWrap.appendChild(tWrap);
+  panel.appendChild(actWrap);
+}
+
+/* ═══ NEXT SPRINT ═══════════════════════════════════════════ */
+function renderNext(panel) {
+  panel.appendChild(sectionHead("🗳️ Shape the Next Sprint","Vote on format and structure — up to 3 votes each. Results visible to everyone live."));
+  const totalNV = Object.values(nextVotes).reduce((a,b)=>a+b,0);
+  const myCount = Object.keys(myNextVotes).length;
+
+  const grid = document.createElement("div");
+  grid.style.cssText = "display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:24px";
+  NEXT_VOTES_DEF.forEach(opt=>{
+    const count = nextVotes[opt.id]||0;
+    const isMy  = myNextVotes[opt.id];
+    const pct   = totalNV>0?Math.round((count/totalNV)*100):0;
+    const maxed = myCount>=3&&!isMy;
+    const btn   = document.createElement("button");
+    btn.style.cssText = `background:${isMy?"#1e40af":"#1e293b"};border:2px solid ${isMy?"#3b82f6":"#334155"};border-radius:12px;padding:14px 18px;cursor:${maxed?"not-allowed":"pointer"};opacity:${maxed?.45:1};box-shadow:${isMy?"0 0 12px #3b82f688":"none"};display:flex;align-items:center;gap:14px;transition:all .2s;text-align:left;width:100%`;
+    btn.innerHTML = `
+      <span style="font-size:26px;flex-shrink:0">${opt.emoji}</span>
+      <div style="flex:1;text-align:left">
+        <div style="font-size:14px;font-weight:${isMy?800:600};color:${isMy?"#93c5fd":"#e2e8f0"}">${opt.label}</div>
+        ${count>0?`<div style="margin-top:6px"><div style="height:4px;border-radius:2px;background:#334155;overflow:hidden"><div class="bar-fill" style="height:100%;width:${pct}%;background:${isMy?"#3b82f6":"#64748b"};transition:width .4s ease"></div></div><div style="font-size:11px;color:${isMy?"#93c5fd":"#64748b"};margin-top:3px">${count} vote${count!==1?"s":""} · ${pct}%</div></div>`:""}
+      </div>
+      ${isMy?`<span style="font-size:16px;color:#3b82f6;flex-shrink:0">✓</span>`:""}`;
+    btn.onclick = ()=>castNextVote(opt.id);
+    grid.appendChild(btn);
+  });
+  panel.appendChild(grid);
+
+  const hint = document.createElement("div");
+  hint.style.cssText = "font-size:12px;color:#475569;text-align:center;margin-bottom:20px";
+  hint.textContent = `${myCount}/3 votes used — tap a selected option to remove it`;
+  panel.appendChild(hint);
+
+  if(Object.values(nextVotes).some(v=>v>0)) {
+    const top = document.createElement("div");
+    top.style.cssText = "background:#1e293b;border:1px solid #334155;border-radius:10px;padding:14px 18px";
+    const sorted = [...NEXT_VOTES_DEF].filter(o=>nextVotes[o.id]>0).sort((a,b)=>(nextVotes[b.id]||0)-(nextVotes[a.id]||0)).slice(0,3);
+    top.innerHTML = `<div style="font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Top picks so far</div>
+      ${sorted.map((o,i)=>`<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <span style="font-size:14px;width:20px;color:${i===0?"#f59e0b":"#64748b"};font-weight:800">#${i+1}</span>
+        <span style="font-size:14px">${o.emoji}</span>
+        <span style="flex:1;font-size:13px;color:#e2e8f0">${o.label}</span>
+        <span style="font-size:13px;font-weight:700;color:#60a5fa">${nextVotes[o.id]}</span>
+      </div>`).join("")}`;
+    panel.appendChild(top);
+  }
+}
+
+/* ═══ EXPORT / IMPORT ═══════════════════════════════════════ */
+function renderExport(panel) {
+  panel.appendChild(sectionHead("📦 Export & Import","Export this sprint's data to carry into the next board — or import a previous sprint's JSON."));
+
+  panel.innerHTML += "";
+
+  // Storage info
+  const info = document.createElement("div");
+  info.style.cssText = "background:#0f2a1a;border:1px solid #166534;border-radius:10px;padding:12px 16px;margin-bottom:20px;display:flex;gap:10px;align-items:flex-start";
+  info.innerHTML = `<span style="font-size:16px">🔥</span><div style="font-size:13px;color:#86efac;line-height:1.6"><strong>Firebase Realtime Database is active.</strong> All votes, notes, wins and actions sync in real-time across everyone's browsers. Data persists indefinitely — closing the tab or refreshing won't lose anything.<br/>Between sprints, Export a snapshot below, paste it somewhere safe, then Import it into the next sprint's board.</div>`;
+  panel.appendChild(info);
+
+  // Export
+  const exportBox = document.createElement("div");
+  exportBox.style.cssText = "background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px 24px;margin-bottom:16px";
+  exportBox.innerHTML = `
+    <div style="font-size:15px;font-weight:800;color:#f1f5f9;margin-bottom:6px">Export Sprint 55</div>
+    <div style="font-size:13px;color:#64748b;margin-bottom:16px">Copies a full JSON snapshot to your clipboard. Paste it into the Import field in the next sprint's board.</div>
+    <button id="export-btn" onclick="handleExport()" style="background:#f59e0b;color:#020617;border:none;border-radius:10px;padding:11px 26px;font-size:14px;font-weight:800;transition:all .3s;display:flex;align-items:center;gap:8px">📋 Copy sprint data to clipboard</button>`;
+  panel.appendChild(exportBox);
+
+  // Import
+  const importBox = document.createElement("div");
+  importBox.style.cssText = "background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px 24px;margin-bottom:16px";
+  importBox.innerHTML = `
+    <div style="font-size:15px;font-weight:800;color:#f1f5f9;margin-bottom:6px">Import Previous Sprint</div>
+    <div style="font-size:13px;color:#64748b;margin-bottom:16px">Paste the export JSON from the previous sprint. Loads previous actions into Check-in and sets health baselines. <strong style="color:#f59e0b">Writes to Firebase — affects everyone.</strong></div>
+    <textarea id="import-ta" placeholder='Paste previous sprint JSON here...' style="width:100%;min-height:160px;background:#0f172a;border:1.5px solid #334155;border-radius:10px;padding:12px 14px;font-size:12px;font-family:monospace;color:#94a3b8;outline:none;resize:vertical;box-sizing:border-box;line-height:1.6"></textarea>
+    <div id="import-err" style="color:#f87171;font-size:12px;margin-top:6px"></div>
+    <div id="import-ok" style="color:#4ade80;font-size:12px;margin-top:6px"></div>
+    <button onclick="handleImport()" style="margin-top:12px;background:#3b82f6;color:#fff;border:none;border-radius:10px;padding:10px 24px;font-size:14px;font-weight:700;transition:all .2s">Load previous sprint →</button>`;
+  panel.appendChild(importBox);
+
+  // Danger zone
+  const danger = document.createElement("div");
+  danger.style.cssText = "background:#1e293b;border:1px solid #7f1d1d;border-radius:12px;padding:20px 24px";
+  danger.innerHTML = `
+    <div style="font-size:15px;font-weight:800;color:#f87171;margin-bottom:6px">⚠️ Reset Sprint Data</div>
+    <div style="font-size:13px;color:#64748b;margin-bottom:16px">Clears all Firebase data — votes, notes, wins, actions. Use before a new sprint. <strong style="color:#f87171">Cannot be undone. Affects everyone immediately.</strong></div>
+    <button onclick="handleClearAll()" style="background:#7f1d1d;color:#fca5a5;border:1.5px solid #ef4444;border-radius:10px;padding:10px 24px;font-size:14px;font-weight:700">🗑️ Reset all sprint data</button>`;
+  panel.appendChild(danger);
+}
+
+/* ─── BOOT ──────────────────────────────────────────────────── */
+window.addEventListener("load", ()=>{
+  updateHeader();
+  initListeners();
+  // Hide loader, show app once first data arrives (or after 2s timeout)
+  let shown = false;
+  const show = ()=>{
+    if(shown) return; shown=true;
+    document.getElementById("loading").style.display="none";
+    document.getElementById("app").style.display="block";
+  };
+  ref("moodVotes").once("value", ()=>show());
+  setTimeout(show, 2000);
+});
+</script>
+</body>
+</html>
