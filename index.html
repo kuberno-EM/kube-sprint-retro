@@ -927,9 +927,31 @@ function renderWins(panel) {
   wall.style.cssText = "display:flex;flex-wrap:wrap;gap:16px";
   celebrate.forEach((w,i)=>{
     const rot = NOTE_ROTS[i%NOTE_ROTS.length];
+    const eid = "win-"+w.id;
     const note = document.createElement("div");
-    note.style.cssText = `--rot:${rot}deg;transform:rotate(${rot}deg);background:#fde047;color:#1c1917;border-radius:4px;padding:16px 18px 24px;font-size:14px;font-weight:600;min-width:140px;max-width:200px;box-shadow:3px 4px 12px rgba(0,0,0,.35);line-height:1.4`;
-    note.innerHTML = `<div style="font-size:20px;margin-bottom:6px">⭐</div>${w.text}`;
+    note.id = eid;
+    note.style.cssText = `--rot:${rot}deg;transform:rotate(${rot}deg);background:#fde047;color:#1c1917;border-radius:4px;padding:14px 18px 20px;font-size:14px;font-weight:600;min-width:140px;max-width:200px;box-shadow:3px 4px 12px rgba(0,0,0,.35);line-height:1.4;position:relative`;
+    note.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+        <span style="font-size:20px">⭐</span>
+        <div class="item-actions" style="display:flex;gap:2px">
+          <button onclick="startInlineEdit('${eid}','${w.text.replace(/'/g,"\'")}',null)" title="Edit"
+            style="background:rgba(0,0,0,.08);border:none;border-radius:4px;padding:2px 5px;font-size:11px;cursor:pointer;color:#78350f">✏️</button>
+          <button onclick="deleteWin(${w.id})" title="Delete"
+            style="background:rgba(0,0,0,.08);border:none;border-radius:4px;padding:2px 5px;font-size:11px;cursor:pointer;color:#78350f">✕</button>
+        </div>
+      </div>
+      <span class="item-text">${w.text}</span>
+      <div class="item-edit-row" style="display:none;flex-direction:column;gap:6px;margin-top:8px">
+        <input style="width:100%;background:#fffbeb;border:1.5px solid #ca8a04;border-radius:6px;padding:5px 8px;font-size:13px;color:#1c1917;outline:none;box-sizing:border-box"
+          onkeydown="if(event.key==='Enter'){saveWinEdit(${w.id},this.value);cancelInlineEdit('${eid}')}if(event.key==='Escape')cancelInlineEdit('${eid}')"/>
+        <div style="display:flex;gap:6px">
+          <button onclick="const inp=document.getElementById('${eid}').querySelector('.item-edit-row input');saveWinEdit(${w.id},inp.value);cancelInlineEdit('${eid}')"
+            style="background:#ca8a04;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer">Save</button>
+          <button onclick="cancelInlineEdit('${eid}')"
+            style="background:#e2e8f0;color:#475569;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer">Cancel</button>
+        </div>
+      </div>`;
     wall.appendChild(note);
   });
   panel.appendChild(wall);
@@ -952,13 +974,28 @@ function renderRetro(panel) {
       ? `<div style="text-align:center;padding:24px 0;color:#475569;font-size:13px">Notes will appear here live ✨</div>`
       : colNotes.map((n,i)=>{
           const isTop = n.votes>0&&i===0;
-          return `<div style="background:${isTop?col.accent+"22":col.bg};border:${isTop?2:1}px solid ${isTop?col.accent:col.border};border-radius:8px;padding:9px 10px 9px 12px;font-size:13px;color:#1c1917;font-weight:${isTop?700:500};box-shadow:${isTop?`0 0 0 2px ${col.accent}44,0 2px 8px rgba(0,0,0,.18)`:"0 2px 6px rgba(0,0,0,.15)"};line-height:1.4;display:flex;align-items:center;gap:8px;margin-bottom:8px">
-            ${isTop?`<span style="font-size:12px;flex-shrink:0">🔥</span>`:""}
-            <span style="flex:1">${n.text}</span>
-            <button onclick="upvoteNote('${col.id}',${n.id})" style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:1px;background:${n.votes>0?col.accent+"22":"rgba(255,255,255,.5)"};border:1.5px solid ${n.votes>0?col.accent:"rgba(0,0,0,.12)"};border-radius:7px;padding:4px 7px;min-width:34px;color:inherit">
-              <span style="font-size:11px;line-height:1">▲</span>
-              <span style="font-size:12px;font-weight:800;color:${n.votes>0?col.accent:"#64748b"};line-height:1;margin-top:1px">${n.votes}</span>
-            </button>
+          const eid = "note-"+col.id+"-"+n.id;
+          return `<div id="${eid}" style="background:${isTop?col.accent+"22":col.bg};border:${isTop?2:1}px solid ${isTop?col.accent:col.border};border-radius:8px;padding:9px 10px 9px 12px;font-size:13px;color:#1c1917;font-weight:${isTop?700:500};box-shadow:${isTop?`0 0 0 2px ${col.accent}44,0 2px 8px rgba(0,0,0,.18)`:"0 2px 6px rgba(0,0,0,.15)"};line-height:1.4;margin-bottom:8px">
+            <div style="display:flex;align-items:center;gap:8px">
+              ${isTop?`<span style="font-size:12px;flex-shrink:0">🔥</span>`:""}
+              <span class="item-text" style="flex:1">${n.text}</span>
+              <div class="item-actions" style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+                <button onclick="startInlineEdit('${eid}','${n.text.replace(/'/g,"\'")}',null)" title="Edit" style="background:none;border:none;cursor:pointer;font-size:12px;color:#64748b;padding:2px 4px">✏️</button>
+                <button onclick="deleteNote('${col.id}',${n.id})" title="Delete" style="background:none;border:none;cursor:pointer;font-size:12px;color:#64748b;padding:2px 4px">✕</button>
+                <button onclick="upvoteNote('${col.id}',${n.id})" style="display:flex;flex-direction:column;align-items:center;gap:1px;background:${n.votes>0?col.accent+"22":"rgba(255,255,255,.5)"};border:1.5px solid ${n.votes>0?col.accent:"rgba(0,0,0,.12)"};border-radius:7px;padding:4px 7px;min-width:34px;cursor:pointer">
+                  <span style="font-size:11px;line-height:1">▲</span>
+                  <span style="font-size:12px;font-weight:800;color:${n.votes>0?col.accent:"#64748b"};line-height:1;margin-top:1px">${n.votes}</span>
+                </button>
+              </div>
+            </div>
+            <div class="item-edit-row" style="display:none;gap:6px;margin-top:6px">
+              <input style="flex:1;background:#fff;border:1.5px solid ${col.accent};border-radius:6px;padding:5px 8px;font-size:13px;color:#1c1917;outline:none"
+                onkeydown="if(event.key==='Enter'){saveNoteEdit('${col.id}',${n.id},this.value);cancelInlineEdit('${eid}')}if(event.key==='Escape')cancelInlineEdit('${eid}')"/>
+              <button onclick="const inp=document.getElementById('${eid}').querySelector('.item-edit-row input');saveNoteEdit('${col.id}',${n.id},inp.value);cancelInlineEdit('${eid}')"
+                style="background:${col.accent};color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer">Save</button>
+              <button onclick="cancelInlineEdit('${eid}')"
+                style="background:#e2e8f0;color:#475569;border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer">Cancel</button>
+            </div>
           </div>`;
         }).join("");
 
@@ -1032,6 +1069,66 @@ function renderRetro(panel) {
   panel.appendChild(actWrap);
 }
 
+/* ─── EDIT / DELETE HELPERS ─────────────────────────────────── */
+
+// Retro notes
+function deleteNote(col, id) {
+  const updated = {...notes, [col]: notes[col].filter(n=>n.id!==id)};
+  fw("notes", updated);
+}
+function saveNoteEdit(col, id, newText) {
+  const v = newText.trim();
+  if(!v) return;
+  const updated = {...notes, [col]: notes[col].map(n=>n.id===id?{...n,text:v}:n)};
+  fw("notes", updated);
+}
+
+// Wins
+function deleteWin(id) {
+  fw("celebrate", celebrate.filter(w=>w.id!==id));
+}
+function saveWinEdit(id, newText) {
+  const v = newText.trim();
+  if(!v) return;
+  fw("celebrate", celebrate.map(w=>w.id===id?{...w,text:v}:w));
+}
+
+// Next sprint suggestions
+function deleteNextNote(id) {
+  fw("nextNotes", nextNotes.filter(n=>n.id!==id));
+}
+function saveNextNoteEdit(id, newText) {
+  const v = newText.trim();
+  if(!v) return;
+  fw("nextNotes", nextNotes.map(n=>n.id===id?{...n,text:v}:n));
+}
+
+// Inline edit toggle — replaces text span with input, shows save/cancel
+function startInlineEdit(containerId, currentText, saveFn) {
+  const container = document.getElementById(containerId);
+  if(!container) return;
+  const span = container.querySelector(".item-text");
+  const acts  = container.querySelector(".item-actions");
+  const editRow = container.querySelector(".item-edit-row");
+  if(span)    span.style.display    = "none";
+  if(acts)    acts.style.display    = "none";
+  if(editRow) {
+    editRow.style.display = "flex";
+    const inp = editRow.querySelector("input");
+    if(inp){ inp.value = currentText; inp.focus(); inp.select(); }
+  }
+}
+function cancelInlineEdit(containerId) {
+  const container = document.getElementById(containerId);
+  if(!container) return;
+  const span    = container.querySelector(".item-text");
+  const acts    = container.querySelector(".item-actions");
+  const editRow = container.querySelector(".item-edit-row");
+  if(span)    span.style.display    = "";
+  if(acts)    acts.style.display    = "";
+  if(editRow) editRow.style.display = "none";
+}
+
 function addNextNote() {
   const input = document.getElementById("next-note-input");
   const v = (input?.value||"").trim();
@@ -1103,13 +1200,28 @@ function renderNext(panel) {
     ? `<div style="text-align:center;padding:24px 0;color:#475569;font-size:13px">Suggestions will appear here live ✨</div>`
     : nextNotes.map((n,i)=>{
         const isTop = n.votes>0 && i===0;
-        return `<div style="background:${isTop?"#6366f122":"#0f172a"};border:${isTop?2:1}px solid ${isTop?"#6366f1":"#4338ca44"};border-radius:8px;padding:9px 10px 9px 12px;font-size:13px;color:#e2e8f0;font-weight:${isTop?700:400};box-shadow:${isTop?"0 0 0 2px #6366f144,0 2px 8px rgba(0,0,0,.18)":"0 2px 6px rgba(0,0,0,.15)"};line-height:1.4;display:flex;align-items:center;gap:8px;margin-bottom:8px">
-          ${isTop?`<span style="font-size:12px;flex-shrink:0">🔥</span>`:""}
-          <span style="flex:1">${n.text}</span>
-          <button onclick="upvoteNextNote(${n.id})" style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:1px;background:${n.votes>0?"#6366f122":"rgba(255,255,255,.05)"};border:1.5px solid ${n.votes>0?"#6366f1":"#334155"};border-radius:7px;padding:4px 7px;min-width:34px;cursor:pointer">
-            <span style="font-size:11px;line-height:1;color:#94a3b8">▲</span>
-            <span style="font-size:12px;font-weight:800;color:${n.votes>0?"#818cf8":"#64748b"};line-height:1;margin-top:1px">${n.votes}</span>
-          </button>
+        const eid = "nextnote-"+n.id;
+        return `<div id="${eid}" style="background:${isTop?"#6366f122":"#0f172a"};border:${isTop?2:1}px solid ${isTop?"#6366f1":"#4338ca44"};border-radius:8px;padding:9px 10px 9px 12px;font-size:13px;color:#e2e8f0;font-weight:${isTop?700:400};box-shadow:${isTop?"0 0 0 2px #6366f144,0 2px 8px rgba(0,0,0,.18)":"0 2px 6px rgba(0,0,0,.15)"};line-height:1.4;margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:8px">
+            ${isTop?`<span style="font-size:12px;flex-shrink:0">🔥</span>`:""}
+            <span class="item-text" style="flex:1">${n.text}</span>
+            <div class="item-actions" style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+              <button onclick="startInlineEdit('${eid}','${n.text.replace(/'/g,"\'")}',null)" title="Edit" style="background:none;border:none;cursor:pointer;font-size:12px;color:#64748b;padding:2px 4px">✏️</button>
+              <button onclick="deleteNextNote(${n.id})" title="Delete" style="background:none;border:none;cursor:pointer;font-size:12px;color:#64748b;padding:2px 4px">✕</button>
+              <button onclick="upvoteNextNote(${n.id})" style="display:flex;flex-direction:column;align-items:center;gap:1px;background:${n.votes>0?"#6366f122":"rgba(255,255,255,.05)"};border:1.5px solid ${n.votes>0?"#6366f1":"#334155"};border-radius:7px;padding:4px 7px;min-width:34px;cursor:pointer">
+                <span style="font-size:11px;line-height:1;color:#94a3b8">▲</span>
+                <span style="font-size:12px;font-weight:800;color:${n.votes>0?"#818cf8":"#64748b"};line-height:1;margin-top:1px">${n.votes}</span>
+              </button>
+            </div>
+          </div>
+          <div class="item-edit-row" style="display:none;gap:6px;margin-top:6px">
+            <input style="flex:1;background:#1e293b;border:1.5px solid #6366f1;border-radius:6px;padding:5px 8px;font-size:13px;color:#e2e8f0;outline:none"
+              onkeydown="if(event.key==='Enter'){saveNextNoteEdit(${n.id},this.value);cancelInlineEdit('${eid}')}if(event.key==='Escape')cancelInlineEdit('${eid}')"/>
+            <button onclick="const inp=document.getElementById('${eid}').querySelector('.item-edit-row input');saveNextNoteEdit(${n.id},inp.value);cancelInlineEdit('${eid}')"
+              style="background:#6366f1;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer">Save</button>
+            <button onclick="cancelInlineEdit('${eid}')"
+              style="background:#334155;color:#94a3b8;border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer">Cancel</button>
+          </div>
         </div>`;
       }).join("");
 
