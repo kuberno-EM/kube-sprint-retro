@@ -169,10 +169,122 @@ const NOTE_COLS = [
   {id:"ideas",label:"💡 Ideas & proposals",    bg:"#f0fdf4",border:"#86efac",accent:"#15803d"},
 ];
 const PROMPTS = {
-  well: ["What's worth putting in the captain's log?"],
-  bad:  ["Hi, I'm a problem. I have a great day planned."],
-  ideas:["One experiment worth trying next sprint?"],
+  well: [
+    // Star Trek
+    "Captain's log — what made this sprint worthy of the record?",
+    "Engage! What propelled the crew forward this sprint?",
+    "Live long and prosper — what helped us do both?",
+    "Make it so. What actually got made, and made well?",
+    "Resistance was futile — what did the team overcome?",
+    "We come in peace. What made collaboration feel effortless?",
+    "There are four lights — and this sprint, they all shone. What lit it up?",
+    "The needs of the many — what benefited the whole team?",
+    "Fascinating. What surprised you in a good way this sprint?",
+    "I have been, and always shall be, your friend — what teamwork stood out?",
+    // Star Wars
+    "The Force was strong — where did we feel it most?",
+    "Do or do not, there is no try — what did we actually do?",
+    "These are the droids you were looking for. What delivered?",
+    "I've got a good feeling about this — what gave you that feeling?",
+    "In my experience there is no such thing as luck — what skill paid off?",
+    "The Force will be with you, always — what carried through the whole sprint?",
+    "Rebellions are built on hope — what gave the team momentum?",
+    "That's no moon — it's a completed feature. What shipped?",
+    "Never tell me the odds — what pulled off something impressive?",
+    "May the Force be with us — and this sprint, it was. Where?",
+    // Nic Cage
+    "I'm a vampire! What gave you energy this sprint?",
+    "Put the bunny back in the box — what safely landed?",
+    "I want to eat your soul — what work did you devour with passion?",
+    "I AM focused! What showed the team at its sharpest?",
+    "It's not about the money — what intrinsic reward came out of this sprint?",
+    "I could eat a peach for hours — what could you celebrate all day?",
+    // Barbie
+    "You can be anything — what did we become this sprint?",
+    "Life in plastic, it's fantastic — what worked beautifully?",
+    "Every day here is perfect — what made a day feel that way?",
+    "Come on Barbie — what had the whole team saying yes?",
+    "We're just so good at being in charge — what leadership moment stood out?",
+    "I'm a Barbie girl in an agile world — what felt in its element?",
+  ],
+  bad: [
+    // Barbie
+    "Hi, I'm a problem. I have a great day planned.",
+    "It's a weird moment to be a problem — what felt off?",
+    "Do you guys ever think about dying? What drained the sprint?",
+    "I'm not pretty enough, I'm not smart enough — where did confidence take a hit?",
+    "Everything is great, except it isn't — what was the hidden friction?",
+    "The patriarchy is to blame — what structural issue slowed us down?",
+    // Star Trek
+    "Damage report — what hit the shields this sprint?",
+    "We are the Borg. What assimilated our time and energy?",
+    "Highly illogical — what made no sense this sprint?",
+    "Red alert! What put the team under pressure?",
+    "It's worse than that, it's dead Jim — what flatlined?",
+    "I'm a doctor, not a miracle worker — what was beyond our capacity?",
+    "Dammit Jim! What went wrong that could have been avoided?",
+    "There are lies, damn lies, and estimates — where did planning let us down?",
+    "Khaaaan! What frustrated you most this sprint?",
+    "Shields at twelve percent — what left the team exposed?",
+    // Star Wars
+    "I've got a bad feeling about this — what was it?",
+    "This is not going to go the way you think — what didn't?",
+    "The dark side clouds everything — what blocked visibility?",
+    "I find your lack of clarity disturbing — what was unclear?",
+    "Into the garbage chute, flyboy — what got sucked into unnecessary work?",
+    "That's not how the Force works! What was misunderstood?",
+    "You have failed me for the last time — what process let the team down?",
+    "We seem to be made to suffer — what repetitive pain kept returning?",
+    // Nic Cage
+    "How'd it get burned?! What caught fire in a bad way?",
+    "Not the bees! What stung the team this sprint?",
+    "I'm having a bad day! What made yours worse?",
+    "I will not cage my feelings — what frustration needs to be named?",
+  ],
+  ideas: [
+    // Star Trek
+    "To boldly go — what experiment hasn't been tried before?",
+    "Beam us up — what would transport us to a better sprint?",
+    "Resistance is futile only if we don't try this idea first.",
+    "Second star to the right — what's worth navigating towards?",
+    "The final frontier is a better process — what should we explore?",
+    "Make it so, Number One — what idea just needs someone to say yes?",
+    "Tea, Earl Grey, hot — and one fresh idea to go with it.",
+    "Live long and iterate — what small change compounds over time?",
+    "To seek out new workflows and new ways of working — what's worth discovering?",
+    "Set phasers to improve — what are we going to fix next sprint?",
+    // Star Wars
+    "Your focus determines your reality — what should we focus on?",
+    "The ability to destroy a planet is insignificant next to... this idea.",
+    "Help us, next sprint — you're our only hope.",
+    "Always in motion is the future — what should we set in motion?",
+    "Strike me down and I shall become more productive than you can possibly imagine.",
+    "The Force awakens — what dormant idea is ready to come to life?",
+    "I am your process improvement — what needs to be rethought?",
+    "Use the Force, Luke — trust your instincts. What feels worth trying?",
+    "Why, you stuck-up, half-witted, scruffy-looking idea? Sounds perfect.",
+    "Great, kid. Don't get cocky — what idea needs a small safe test first?",
+    // Nic Cage
+    "I'm going to steal the Declaration of Independence — what bold move should we make?",
+    "I want to live again! What would breathe life into next sprint?",
+    "I could be a great actor — what role should the team play differently?",
+    "Somehow I'm going to get out of this — what's the escape route from our biggest blocker?",
+    "You know me, I'm unpredictable — what unconventional approach is worth a shot?",
+    "I've done enough bad movies to know a good idea — what's the good idea?",
+    // Barbie
+    "Come on Barbie, let's go party — what would make next sprint more fun?",
+    "You were made to imagine the impossible — what impossible thing is worth trying?",
+    "She's everything, he's just Ken — what underutilised resource should we lean into?",
+    "We don't have to be what they made us — what should we do differently by design?",
+    "I'm not a doll, I'm a possibility — what could we become if we tried?",
+    "Do you want to come to my dream house? What would the dream sprint look like?",
+  ],
 };
+// Pick a random prompt for each column on each render
+function getPrompt(col) {
+  const arr = PROMPTS[col];
+  return arr[Math.floor(Math.random() * arr.length)];
+}
 const NEXT_VOTES_DEF = [
   {id:"format-keep", label:"Keep the same retro format",                              emoji:"🔁"},
   {id:"format-nuke", label:"Back to the drawing board",                               emoji:"💥"},
@@ -773,7 +885,7 @@ function patchWinsUI() {
         </div>
       </div>
       <span class="item-text">${w.text}</span>
-      <div style="font-size:8px;color:rgba(0,0,0,.18);margin-top:8px;font-style:italic;line-height:1.3;text-align:right">“${cageLine}”</div>
+      <div style="font-size:10px;color:rgba(28,25,23,.42);margin-top:10px;padding-top:8px;border-top:1px solid rgba(0,0,0,.08);font-style:italic;line-height:1.3;text-align:right">“${cageLine}”</div>
       <div class="item-edit-row" style="display:none;flex-direction:column;gap:6px;margin-top:8px">
         <input style="width:100%;background:#fffbeb;border:1.5px solid #ca8a04;border-radius:6px;padding:5px 8px;font-size:13px;color:#1c1917;outline:none;box-sizing:border-box"
           onkeydown="if(event.key==='Enter'){saveWinEdit(${w.id},this.value);cancelInlineEdit('win-${w.id}')}if(event.key==='Escape')cancelInlineEdit('win-${w.id}')"/>
@@ -1439,7 +1551,7 @@ function renderRetro(panel) {
         <span style="font-weight:800;font-size:14px;color:#f1f5f9">${col.label}</span>
         <span id="retro-badge-${col.id}" style="background:${col.border}44;color:${col.accent};border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700">${colNotes.length}</span>
       </div>
-      <div style="font-size:12px;font-style:italic;color:#64748b;border-left:3px solid ${col.accent};padding-left:10px;margin-bottom:14px;line-height:1.5">${PROMPTS[col.id][0]}</div>
+      <div style="font-size:12px;font-style:italic;color:#64748b;border-left:3px solid ${col.accent};padding-left:10px;margin-bottom:14px;line-height:1.5">${getPrompt(col.id)}</div>
       <div id="retro-list-${col.id}" style="flex:1">${notesHTML}</div>
       <div style="display:flex;gap:6px;margin-top:auto;padding-top:8px">
         <input id="note-input-${col.id}" placeholder="Add note — press Enter" onkeydown="if(event.key==='Enter')addNote('${col.id}')"
