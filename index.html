@@ -195,10 +195,8 @@ const PROMPTS = {
     // Nic Cage
     "I'm a vampire! What gave you energy this sprint?",
     "Put the bunny back in the box — what safely landed?",
-    "I want to eat your soul — what work did you devour with passion?",
     "I AM focused! What showed the team at its sharpest?",
     "It's not about the money — what intrinsic reward came out of this sprint?",
-    "I could eat a peach for hours — what could you celebrate all day?",
     // Barbie
     "You can be anything — what did we become this sprint?",
     "Life in plastic, it's fantastic — what worked beautifully?",
@@ -211,10 +209,8 @@ const PROMPTS = {
     // Barbie
     "Hi, I'm a problem. I have a great day planned.",
     "It's a weird moment to be a problem — what felt off?",
-    "Do you guys ever think about dying? What drained the sprint?",
     "I'm not pretty enough, I'm not smart enough — where did confidence take a hit?",
     "Everything is great, except it isn't — what was the hidden friction?",
-    "The patriarchy is to blame — what structural issue slowed us down?",
     // Star Trek
     "Damage report — what hit the shields this sprint?",
     "We are the Borg. What assimilated our time and energy?",
@@ -678,6 +674,29 @@ function handleClearAll() {
   localStorage.removeItem("s"+sprintNum+":myHealth");
   localStorage.removeItem("s"+sprintNum+":myNext");
   render(false);
+}
+
+function handleExportCurrent() {
+  const text = JSON.stringify(buildExportPayload(), null, 2);
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById("export-current-btn");
+    if(btn) {
+      btn.textContent = "✓ Copied to clipboard!";
+      btn.style.background = "#14532d";
+      btn.style.color = "#86efac";
+      setTimeout(() => {
+        const b = document.getElementById("export-current-btn");
+        if(b) {
+          b.textContent = "📋 Copy Sprint " + sprintNum + " to clipboard";
+          b.style.background = "#f59e0b";
+          b.style.color = "#020617";
+        }
+      }, 3000);
+    }
+  }).catch(() => {
+    const btn = document.getElementById("export-current-btn");
+    if(btn) btn.textContent = "⚠️ Copy failed — use HTTPS";
+  });
 }
 
 async function handleExportAll() {
@@ -1432,7 +1451,7 @@ function renderHealth(panel) {
 
 /* ═══ WINS ══════════════════════════════════════════════════ */
 const CAGE_LINES = [
-  "I'm a vampire!", "I want to eat your soul!", "Not the bees!",
+  "I'm a vampire!", "Not the bees!",
   "I AM A VAMPIRE.", "Put the bunny back in the box.",
   "How'd it get burned?!", "I'm going to steal the Declaration of Independence.",
   "You're not you when you're hungry... wait, wrong guy.",
@@ -1823,13 +1842,22 @@ function renderExport(panel) {
     </div>`;
   panel.appendChild(sprintBox);
 
+  // Export current sprint
+  const exportCurrentBox = document.createElement("div");
+  exportCurrentBox.style.cssText = "background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px 24px;margin-bottom:16px";
+  exportCurrentBox.innerHTML = `
+    <div style="font-size:15px;font-weight:800;color:#f1f5f9;margin-bottom:6px">📋 Export Sprint ${sprintNum}</div>
+    <div style="font-size:13px;color:#64748b;margin-bottom:16px">Copies a JSON snapshot of the current sprint to your clipboard — votes, notes, wins, actions and health results. Useful for pasting into a document or importing into a future board.</div>
+    <button id="export-current-btn" onclick="handleExportCurrent()" style="background:#f59e0b;color:#020617;border:none;border-radius:10px;padding:11px 26px;font-size:14px;font-weight:800;transition:all .3s;display:flex;align-items:center;gap:8px">📋 Copy Sprint ${sprintNum} to clipboard</button>`;
+  panel.appendChild(exportCurrentBox);
+
   // Export all sprints
   const exportBox = document.createElement("div");
   exportBox.style.cssText = "background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px 24px;margin-bottom:16px";
   exportBox.innerHTML = `
     <div style="font-size:15px;font-weight:800;color:#f1f5f9;margin-bottom:6px">📚 Export All Sprints</div>
     <div style="font-size:13px;color:#64748b;margin-bottom:16px">Downloads a complete JSON archive of every sprint stored in Firebase — all votes, notes, actions and health data across all sprint numbers.</div>
-    <button id="export-all-btn" onclick="handleExportAll()" style="background:#f59e0b;color:#020617;border:none;border-radius:10px;padding:11px 26px;font-size:14px;font-weight:800;transition:all .3s;display:flex;align-items:center;gap:8px">📥 Download all sprint data</button>`;
+    <button id="export-all-btn" onclick="handleExportAll()" style="background:#334155;color:#e2e8f0;border:1.5px solid #475569;border-radius:10px;padding:11px 26px;font-size:14px;font-weight:800;transition:all .3s;display:flex;align-items:center;gap:8px">📥 Download all sprint data</button>`;
   panel.appendChild(exportBox);
 
   // Import
