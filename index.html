@@ -165,12 +165,12 @@ const MOODS = [
 ];
 const NOTE_COLS = [
   {id:"well", label:"✅ What went well?",      bg:"#fefce8",border:"#fde047",accent:"#ca8a04"},
-  {id:"bad",  label:"😬 What didn't go well?", bg:"#fdf2f8",border:"#f0abfc",accent:"#a21caf"},
+  {id:"bad",  label:"💅 What didn't go well?", bg:"#fdf2f8",border:"#f9a8d4",accent:"#db2777", barbie:true},
   {id:"ideas",label:"💡 Ideas & proposals",    bg:"#f0fdf4",border:"#86efac",accent:"#15803d"},
 ];
 const PROMPTS = {
   well: ["What's worth putting in the captain's log?"],
-  bad:  ["What slowed us down the most?"],
+  bad:  ["Hi, I'm a problem. I have a great day planned."],
   ideas:["One experiment worth trying next sprint?"],
 };
 const NEXT_VOTES_DEF = [
@@ -678,6 +678,12 @@ function patch(affectedTab) {
   }
 }
 
+/* ─── MOOD IMAGE HELPER ─────────────────────────────────────── */
+// Returns an inline img tag for use in bars/legends — small circular portrait
+function moodImg(m, size) {
+  return `<img src="${m.img}" alt="${m.label}" style="width:${size}px;height:${size}px;object-fit:cover;border-radius:50%;flex-shrink:0;vertical-align:middle" onerror="this.style.display='none'">`;
+}
+
 /* ─── MOOD PATCH ────────────────────────────────────────────── */
 function patchMoodUI() {
   const totalMood = Object.values(moodVotes).reduce((a,b)=>a+b,0);
@@ -703,11 +709,11 @@ function patchMoodUI() {
   if(liveBar && totalMood>0) {
     liveBar.innerHTML = `
       <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">Live mood — ${totalMood} votes</div>
-      <div style="display:flex;height:38px;border-radius:8px;overflow:hidden;gap:2px">
-        ${MOODS.filter(m=>moodVotes[m.id]).map(m=>{const p=(moodVotes[m.id]/totalMood)*100;return `<div style="background:${m.col};width:${p}%;display:flex;align-items:center;justify-content:center;font-size:18px;min-width:2px;transition:width .4s ease">${p>8?m.emoji:""}</div>`;}).join("")}
+      <div style="display:flex;height:42px;border-radius:8px;overflow:hidden;gap:2px;align-items:center">
+        ${MOODS.filter(m=>moodVotes[m.id]).map(m=>{const p=(moodVotes[m.id]/totalMood)*100;return `<div style="background:${m.col};width:${p}%;display:flex;align-items:center;justify-content:center;min-width:2px;height:100%;transition:width .4s ease;overflow:hidden">${p>8?moodImg(m,32):""}</div>`;}).join("")}
       </div>
-      <div style="display:flex;gap:12px;margin-top:10px;flex-wrap:wrap">
-        ${MOODS.filter(m=>moodVotes[m.id]).map(m=>`<span style="font-size:12px;color:${m.col}">${m.emoji} ${m.label} · ${Math.round((moodVotes[m.id]/totalMood)*100)}%</span>`).join("")}
+      <div style="display:flex;gap:12px;margin-top:10px;flex-wrap:wrap;align-items:center">
+        ${MOODS.filter(m=>moodVotes[m.id]).map(m=>`<span style="display:flex;align-items:center;gap:5px;font-size:12px;color:${m.col}">${moodImg(m,16)} ${m.label} · ${Math.round((moodVotes[m.id]/totalMood)*100)}%</span>`).join("")}
       </div>`;
     liveBar.style.display = "";
   }
@@ -756,6 +762,7 @@ function patchWinsUI() {
     note.id = "win-"+w.id;
     note.className = "note-card";
     note.style.cssText = `--rot:${rot}deg;transform:rotate(${rot}deg);background:#fde047;color:#1c1917;border-radius:4px;padding:14px 18px 20px;font-size:14px;font-weight:600;min-width:140px;max-width:200px;box-shadow:3px 4px 12px rgba(0,0,0,.35);line-height:1.4;position:relative`;
+    const cageLine = CAGE_LINES[(w.id||i) % CAGE_LINES.length];
     note.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
         <span style="font-size:20px">⭐</span>
@@ -766,6 +773,7 @@ function patchWinsUI() {
         </div>
       </div>
       <span class="item-text">${w.text}</span>
+      <div style="font-size:8px;color:rgba(0,0,0,.18);margin-top:8px;font-style:italic;line-height:1.3;text-align:right">"${cageLine}"</div>
       <div class="item-edit-row" style="display:none;flex-direction:column;gap:6px;margin-top:8px">
         <input style="width:100%;background:#fffbeb;border:1.5px solid #ca8a04;border-radius:6px;padding:5px 8px;font-size:13px;color:#1c1917;outline:none;box-sizing:border-box"
           onkeydown="if(event.key==='Enter'){saveWinEdit(${w.id},this.value);cancelInlineEdit('win-${w.id}')}if(event.key==='Escape')cancelInlineEdit('win-${w.id}')"/>
@@ -1116,17 +1124,16 @@ function renderMood(panel) {
       const prevTotal = Object.values(importedMood).reduce((s,m)=>s+(m.count||0),0);
       const prevBars = MOODS.filter(m=>importedMood[m.id]&&importedMood[m.id].count>0).map(m=>{
         const pct = Math.round((importedMood[m.id].count/prevTotal)*100);
-        return `<div title="${m.label}: ${importedMood[m.id].count}" style="background:${m.col};width:${pct}%;display:flex;align-items:center;justify-content:center;font-size:16px;min-width:2px">${pct>8?m.emoji:""}</div>`;
+        return `<div title="${m.label}: ${importedMood[m.id].count}" style="background:${m.col};width:${pct}%;display:flex;align-items:center;justify-content:center;min-width:2px;height:100%;overflow:hidden">${pct>8?moodImg(m,24):""}</div>`;
       }).join("");
       const prevLegend = MOODS.filter(m=>importedMood[m.id]&&importedMood[m.id].count>0).map(m=>{
         const pct = Math.round((importedMood[m.id].count/prevTotal)*100);
-        const icon = `<span style="font-size:12px;margin-right:3px">${m.emoji}</span>`;
-        return `<span style="font-size:11px;color:${m.col}">${icon}${m.label} · ${importedMood[m.id].count} vote${importedMood[m.id].count!==1?"s":""} (${pct}%)</span>`;
+        return `<span style="display:flex;align-items:center;gap:4px;font-size:11px;color:${m.col}">${moodImg(m,14)} ${m.label} · ${importedMood[m.id].count} vote${importedMood[m.id].count!==1?"s":""} (${pct}%)</span>`;
       }).join("");
       prevRef.innerHTML = `
         <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Last sprint mood — ${prevTotal} votes</div>
-        <div style="display:flex;height:28px;border-radius:6px;overflow:hidden;gap:2px;margin-bottom:10px">${prevBars}</div>
-        <div style="display:flex;gap:12px;flex-wrap:wrap">${prevLegend}</div>`;
+        <div style="display:flex;height:32px;border-radius:6px;overflow:hidden;gap:2px;margin-bottom:10px;align-items:center">${prevBars}</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">${prevLegend}</div>`;
     } else {
       prevRef.innerHTML = `
         <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">Last sprint mood</div>
@@ -1142,11 +1149,11 @@ function renderMood(panel) {
     const moods = MOODS.filter(m=>moodVotes[m.id]);
     bar.innerHTML = `
       <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">Live mood — ${totalMood} votes</div>
-      <div style="display:flex;height:38px;border-radius:8px;overflow:hidden;gap:2px">
-        ${moods.map(m=>{const p=(moodVotes[m.id]/totalMood)*100;return `<div class="bar-fill" title="${m.label}:${moodVotes[m.id]}" style="background:${m.col};width:${p}%;display:flex;align-items:center;justify-content:center;font-size:18px;min-width:2px;transition:width .4s ease">${p>8?m.emoji:""}</div>`;}).join("")}
+      <div style="display:flex;height:42px;border-radius:8px;overflow:hidden;gap:2px;align-items:center">
+        ${moods.map(m=>{const p=(moodVotes[m.id]/totalMood)*100;return `<div class="bar-fill" title="${m.label}:${moodVotes[m.id]}" style="background:${m.col};width:${p}%;display:flex;align-items:center;justify-content:center;min-width:2px;height:100%;transition:width .4s ease;overflow:hidden">${p>8?moodImg(m,32):""}</div>`;}).join("")}
       </div>
-      <div style="display:flex;gap:12px;margin-top:10px;flex-wrap:wrap">
-        ${moods.map(m=>`<span style="font-size:12px;color:${m.col}">${m.emoji} ${m.label} · ${Math.round((moodVotes[m.id]/totalMood)*100)}%</span>`).join("")}
+      <div style="display:flex;gap:12px;margin-top:10px;flex-wrap:wrap;align-items:center">
+        ${moods.map(m=>`<span style="display:flex;align-items:center;gap:5px;font-size:12px;color:${m.col}">${moodImg(m,16)} ${m.label} · ${Math.round((moodVotes[m.id]/totalMood)*100)}%</span>`).join("")}
       </div>`;
     panel.appendChild(bar);
   }
@@ -1312,8 +1319,20 @@ function renderHealth(panel) {
 }
 
 /* ═══ WINS ══════════════════════════════════════════════════ */
+const CAGE_LINES = [
+  "I'm a vampire!", "I want to eat your soul!", "Not the bees!",
+  "I AM A VAMPIRE.", "Put the bunny back in the box.",
+  "How'd it get burned?!", "I'm going to steal the Declaration of Independence.",
+  "You're not you when you're hungry... wait, wrong guy.",
+  "I want to live again!", "It's not about the money...",
+];
 function renderWins(panel) {
   panel.appendChild(sectionHead("🎉 Wins Wall","Name a win before the retro — they go up on the wall for everyone to see"));
+  // Subtle Nic Cage watermark in the section header area
+  const cageHint = document.createElement("div");
+  cageHint.style.cssText = "font-size:10px;color:#334155;text-align:right;margin-top:-16px;margin-bottom:18px;font-style:italic;letter-spacing:.03em";
+  cageHint.textContent = "🎬 "" + CAGE_LINES[Math.floor(Math.random()*CAGE_LINES.length)] + """;
+  panel.appendChild(cageHint);
 
   const inputRow = document.createElement("div");
   inputRow.style.cssText = "display:flex;gap:10px;margin-bottom:24px";
@@ -1370,7 +1389,12 @@ function renderWins(panel) {
 
 /* ═══ RETRO ═════════════════════════════════════════════════ */
 function renderRetro(panel) {
-  panel.appendChild(sectionHead("Sprint Retrospective","Notes appear live as people add them — spot the themes before you start grouping"));
+  panel.appendChild(sectionHead("Sprint Retrospective","Notes appear live — spot the themes before grouping 💭"));
+  // Subtle Barbie nod in a small tag line
+  const barbieHint = document.createElement("div");
+  barbieHint.style.cssText = "font-size:10px;color:#f9a8d4;text-align:right;margin-top:-16px;margin-bottom:18px;font-style:italic;letter-spacing:.03em";
+  barbieHint.textContent = "✨ "You can be anything" — even a high-performing team";
+  panel.appendChild(barbieHint);
 
   const grid = document.createElement("div");
   grid.style.cssText = "display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px";
