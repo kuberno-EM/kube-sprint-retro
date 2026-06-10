@@ -37,6 +37,11 @@
   #settings-overlay.open #settings-panel{transform:translateX(0)}
   .cog-btn{background:none;border:1.5px solid #334155;border-radius:8px;padding:6px 10px;color:#64748b;font-size:18px;transition:all .2s;line-height:1}
   .cog-btn:hover{border-color:#f59e0b;color:#f59e0b}
+  #timer-btn{display:flex;align-items:center;gap:8px;background:#1e293b;border:1.5px solid #334155;border-radius:10px;padding:7px 14px;color:#94a3b8;font-size:13px;font-weight:700;transition:all .3s;cursor:pointer;font-family:inherit}
+  #timer-btn.running{border-color:#f59e0b;color:#f59e0b;background:#f59e0b11}
+  #timer-btn.done{border-color:#4ade80;color:#4ade80;background:#4ade8011;animation:pulse .8s ease 3}
+  #timer-ring{width:22px;height:22px;flex-shrink:0}
+  #timer-ring circle{transition:stroke-dashoffset .9s linear;transform-origin:center;transform:rotate(-90deg)}
 </style>
 </head>
 <body>
@@ -60,6 +65,15 @@
         <div id="sync-dot" style="width:7px;height:7px;border-radius:50%;background:#f59e0b;animation:pulse 2s infinite"></div>
         <span id="sync-label" style="font-size:11px;color:#475569">Connecting…</span>
       </div>
+      <!-- TIMER -->
+      <button id="timer-btn" onclick="timerClick()" title="4 minute timer">
+        <svg id="timer-ring" viewBox="0 0 22 22">
+          <circle cx="11" cy="11" r="9" fill="none" stroke="#334155" stroke-width="2.5"/>
+          <circle id="timer-arc" cx="11" cy="11" r="9" fill="none" stroke="#f59e0b" stroke-width="2.5"
+            stroke-dasharray="56.5" stroke-dashoffset="0" stroke-linecap="round"/>
+        </svg>
+        <span id="timer-label">4:00</span>
+      </button>
       <button class="cog-btn" onclick="openSettings()" title="Settings / Export / Import">⚙️</button>
       <div style="text-align:right;font-size:12px;color:#64748b">
         <div id="header-actions" style="color:#f59e0b;font-weight:700"></div>
@@ -192,6 +206,18 @@ let myMoodVote    = LS.get('myMood') || null;
 let myHealthVotes = LS.get('myHealth') || {};
 let myNextVotes   = LS.get('myNext') || {};
 
+// Stable browser identity for note ownership — generated once, never changes
+// Stored without sprint prefix so it persists across sprints
+const MY_ID = (() => {
+  const key = "retro:browserId";
+  let id = localStorage.getItem(key);
+  if(!id) { id = Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2); localStorage.setItem(key,id); }
+  return id;
+})();
+
+// Per-note upvote tracking — prevents double-voting on retro notes
+let myNoteVotes = LS.get('myNoteVotes') || {};  // { noteId: true }
+
 let currentTab = "checkin";
 let connected  = false;
 
@@ -206,9 +232,10 @@ function initListeners() {
   _sprintListenersPath = SPRINT;
 
   // Re-load local vote memory for this sprint
-  myMoodVote    = LS.get("myMood")   || null;
-  myHealthVotes = LS.get("myHealth") || {};
-  myNextVotes   = LS.get("myNext")   || {};
+  myMoodVote    = LS.get("myMood")      || null;
+  myHealthVotes = LS.get("myHealth")    || {};
+  myNextVotes   = LS.get("myNext")      || {};
+  myNoteVotes   = LS.get("myNoteVotes") || {};
 
   // Sprint-scoped listeners
   ref("moodVotes").on("value",    s=>{ moodVotes   = s.val()||{}; render(false); updateHeader(); });
@@ -301,12 +328,13 @@ function addNote(col) {
   if(!v) return;
   const id = Date.now();
   const colNotes = Array.isArray(notes[col]) ? notes[col] : [];
-  const updated  = {...notes, [col]:[...colNotes, {id,text:v,votes:0}]};
+  const updated  = {...notes, [col]:[...colNotes, {id,text:v,votes:0,creatorId:MY_ID}]};
   fw("notes", updated);
   input.value = "";
 }
 
 function upvoteNote(col, id) {
+  if(myNoteVotes[id]) return; // already voted
   const colNotes = Array.isArray(notes[col]) ? notes[col] : [];
   const updated = {
     ...notes,
@@ -314,6 +342,8 @@ function upvoteNote(col, id) {
       .map(n => n.id===id ? {...n, votes:n.votes+1} : n)
       .sort((a,b)=>b.votes-a.votes)
   };
+  myNoteVotes = {...myNoteVotes, [id]:true};
+  LS.set('myNoteVotes', myNoteVotes);
   fw("notes", updated);
 }
 
@@ -322,7 +352,7 @@ function addCelebrate() {
   const v = (input?.value||"").trim();
   if(!v) return;
   const id = Date.now();
-  const updated = [...celebrate, {id,text:v}];
+  const updated = [...celebrate, {id,text:v,creatorId:MY_ID}];
   fw("celebrate", updated);
   input.value = "";
 }
@@ -625,6 +655,12 @@ function updateHeader() {
 function render(animate) {
   const content = document.getElementById("content");
   if(!content) return;
+
+  // Preserve any input the user is currently typing in
+  const activeEl    = document.activeElement;
+  const activeId    = activeEl?.id || null;
+  const activeValue = activeEl?.value || "";
+
   content.innerHTML = "";
   const panel = document.createElement("div");
   if(animate) panel.className = "fade-up";
@@ -640,6 +676,17 @@ function render(animate) {
   }
 
   content.appendChild(panel);
+
+  // Restore focus and value to whichever input was active before re-render
+  if(activeId) {
+    const el = document.getElementById(activeId);
+    if(el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) {
+      el.value = activeValue;
+      el.focus();
+      // Move cursor to end
+      try { el.setSelectionRange(activeValue.length, activeValue.length); } catch(e){}
+    }
+  }
 }
 
 /* ─── SECTION HEAD ──────────────────────────────────────────── */
@@ -935,10 +982,11 @@ function renderWins(panel) {
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
         <span style="font-size:20px">⭐</span>
         <div class="item-actions" style="display:flex;gap:2px">
+          ${w.creatorId===MY_ID?`
           <button onclick="startInlineEdit('${eid}','${w.text.replace(/'/g,"\'")}',null)" title="Edit"
             style="background:rgba(0,0,0,.08);border:none;border-radius:4px;padding:2px 5px;font-size:11px;cursor:pointer;color:#78350f">✏️</button>
           <button onclick="deleteWin(${w.id})" title="Delete"
-            style="background:rgba(0,0,0,.08);border:none;border-radius:4px;padding:2px 5px;font-size:11px;cursor:pointer;color:#78350f">✕</button>
+            style="background:rgba(0,0,0,.08);border:none;border-radius:4px;padding:2px 5px;font-size:11px;cursor:pointer;color:#78350f">✕</button>`:""}
         </div>
       </div>
       <span class="item-text">${w.text}</span>
@@ -975,21 +1023,22 @@ function renderRetro(panel) {
       : colNotes.map((n,i)=>{
           const isTop = n.votes>0&&i===0;
           const eid = "note-"+col.id+"-"+n.id;
-          return `<div id="${eid}" style="background:${isTop?col.accent+"22":col.bg};border:${isTop?2:1}px solid ${isTop?col.accent:col.border};border-radius:8px;padding:9px 10px 9px 12px;font-size:13px;color:#1c1917;font-weight:${isTop?700:500};box-shadow:${isTop?`0 0 0 2px ${col.accent}44,0 2px 8px rgba(0,0,0,.18)`:"0 2px 6px rgba(0,0,0,.15)"};line-height:1.4;margin-bottom:8px">
+          return `<div id="${eid}" style="background:${isTop?col.accent+"22":col.bg};border:${isTop?2:1}px solid ${isTop?col.accent:col.border};border-radius:8px;padding:9px 10px 9px 12px;font-size:13px;color:${isTop?"#f1f5f9":"#1c1917"};font-weight:${isTop?700:500};box-shadow:${isTop?`0 0 0 2px ${col.accent}44,0 2px 8px rgba(0,0,0,.18)`:"0 2px 6px rgba(0,0,0,.15)"};line-height:1.4;margin-bottom:8px">
             <div style="display:flex;align-items:center;gap:8px">
               ${isTop?`<span style="font-size:12px;flex-shrink:0">🔥</span>`:""}
               <span class="item-text" style="flex:1">${n.text}</span>
               <div class="item-actions" style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+                ${n.creatorId===MY_ID?`
                 <button onclick="startInlineEdit('${eid}','${n.text.replace(/'/g,"\'")}',null)" title="Edit" style="background:none;border:none;cursor:pointer;font-size:12px;color:#64748b;padding:2px 4px">✏️</button>
-                <button onclick="deleteNote('${col.id}',${n.id})" title="Delete" style="background:none;border:none;cursor:pointer;font-size:12px;color:#64748b;padding:2px 4px">✕</button>
-                <button onclick="upvoteNote('${col.id}',${n.id})" style="display:flex;flex-direction:column;align-items:center;gap:1px;background:${n.votes>0?col.accent+"22":"rgba(255,255,255,.5)"};border:1.5px solid ${n.votes>0?col.accent:"rgba(0,0,0,.12)"};border-radius:7px;padding:4px 7px;min-width:34px;cursor:pointer">
+                <button onclick="deleteNote('${col.id}',${n.id})" title="Delete" style="background:none;border:none;cursor:pointer;font-size:12px;color:#64748b;padding:2px 4px">✕</button>`:""}
+                <button onclick="upvoteNote('${col.id}',${n.id})" title="${myNoteVotes[n.id]?'Already voted':''}" style="display:flex;flex-direction:column;align-items:center;gap:1px;background:${n.votes>0?col.accent+"22":"rgba(255,255,255,.5)"};border:1.5px solid ${n.votes>0?col.accent:"rgba(0,0,0,.12)"};border-radius:7px;padding:4px 7px;min-width:34px;cursor:${myNoteVotes[n.id]?"not-allowed":"pointer"};opacity:${myNoteVotes[n.id]?0.45:1}">
                   <span style="font-size:11px;line-height:1">▲</span>
                   <span style="font-size:12px;font-weight:800;color:${n.votes>0?col.accent:"#64748b"};line-height:1;margin-top:1px">${n.votes}</span>
                 </button>
               </div>
             </div>
             <div class="item-edit-row" style="display:none;gap:6px;margin-top:6px">
-              <input style="flex:1;background:#fff;border:1.5px solid ${col.accent};border-radius:6px;padding:5px 8px;font-size:13px;color:#1c1917;outline:none"
+              <input style="flex:1;background:${isTop?"#1e293b":"#fff"};border:1.5px solid ${col.accent};border-radius:6px;padding:5px 8px;font-size:13px;color:${isTop?"#f1f5f9":"#1c1917"};outline:none"
                 onkeydown="if(event.key==='Enter'){saveNoteEdit('${col.id}',${n.id},this.value);cancelInlineEdit('${eid}')}if(event.key==='Escape')cancelInlineEdit('${eid}')"/>
               <button onclick="const inp=document.getElementById('${eid}').querySelector('.item-edit-row input');saveNoteEdit('${col.id}',${n.id},inp.value);cancelInlineEdit('${eid}')"
                 style="background:${col.accent};color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer">Save</button>
@@ -1134,15 +1183,18 @@ function addNextNote() {
   const v = (input?.value||"").trim();
   if(!v) return;
   const id = Date.now();
-  const updated = [...nextNotes, {id, text:v, votes:0}];
+  const updated = [...nextNotes, {id, text:v, votes:0, creatorId:MY_ID}];
   fw("nextNotes", updated);
   input.value = "";
 }
 
 function upvoteNextNote(id) {
+  if(myNoteVotes[id]) return; // already voted
   const updated = [...nextNotes]
     .map(n => n.id===id ? {...n, votes:n.votes+1} : n)
     .sort((a,b)=>b.votes-a.votes);
+  myNoteVotes = {...myNoteVotes, [id]:true};
+  LS.set('myNoteVotes', myNoteVotes);
   fw("nextNotes", updated);
 }
 
@@ -1206,9 +1258,10 @@ function renderNext(panel) {
             ${isTop?`<span style="font-size:12px;flex-shrink:0">🔥</span>`:""}
             <span class="item-text" style="flex:1">${n.text}</span>
             <div class="item-actions" style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+              ${n.creatorId===MY_ID?`
               <button onclick="startInlineEdit('${eid}','${n.text.replace(/'/g,"\'")}',null)" title="Edit" style="background:none;border:none;cursor:pointer;font-size:12px;color:#64748b;padding:2px 4px">✏️</button>
-              <button onclick="deleteNextNote(${n.id})" title="Delete" style="background:none;border:none;cursor:pointer;font-size:12px;color:#64748b;padding:2px 4px">✕</button>
-              <button onclick="upvoteNextNote(${n.id})" style="display:flex;flex-direction:column;align-items:center;gap:1px;background:${n.votes>0?"#6366f122":"rgba(255,255,255,.05)"};border:1.5px solid ${n.votes>0?"#6366f1":"#334155"};border-radius:7px;padding:4px 7px;min-width:34px;cursor:pointer">
+              <button onclick="deleteNextNote(${n.id})" title="Delete" style="background:none;border:none;cursor:pointer;font-size:12px;color:#64748b;padding:2px 4px">✕</button>`:""}
+              <button onclick="upvoteNextNote(${n.id})" title="${myNoteVotes[n.id]?'Already voted':''}" style="display:flex;flex-direction:column;align-items:center;gap:1px;background:${n.votes>0?"#6366f122":"rgba(255,255,255,.05)"};border:1.5px solid ${n.votes>0?"#6366f1":"#334155"};border-radius:7px;padding:4px 7px;min-width:34px;cursor:${myNoteVotes[n.id]?"not-allowed":"pointer"};opacity:${myNoteVotes[n.id]?0.45:1}">
                 <span style="font-size:11px;line-height:1;color:#94a3b8">▲</span>
                 <span style="font-size:12px;font-weight:800;color:${n.votes>0?"#818cf8":"#64748b"};line-height:1;margin-top:1px">${n.votes}</span>
               </button>
@@ -1307,6 +1360,83 @@ function renderExport(panel) {
       </div>
     </div>`;
   panel.appendChild(danger);
+}
+
+/* ─── TIMER ─────────────────────────────────────────────────── */
+const TIMER_DURATION = 4 * 60; // seconds
+let timerSecondsLeft = TIMER_DURATION;
+let timerInterval    = null;
+let timerState       = "idle"; // idle | running | done
+
+function timerClick() {
+  if(timerState === "idle" || timerState === "done") {
+    // Start / restart
+    timerSecondsLeft = TIMER_DURATION;
+    timerState = "running";
+    updateTimerUI();
+    timerInterval = setInterval(() => {
+      timerSecondsLeft--;
+      if(timerSecondsLeft <= 0) {
+        timerSecondsLeft = 0;
+        timerState = "done";
+        clearInterval(timerInterval);
+        timerInterval = null;
+        playTimerChime();
+      }
+      updateTimerUI();
+    }, 1000);
+  } else if(timerState === "running") {
+    // Pause / reset on second click while running
+    clearInterval(timerInterval);
+    timerInterval    = null;
+    timerSecondsLeft = TIMER_DURATION;
+    timerState       = "idle";
+    updateTimerUI();
+  }
+}
+
+function updateTimerUI() {
+  const btn   = document.getElementById("timer-btn");
+  const label = document.getElementById("timer-label");
+  const arc   = document.getElementById("timer-arc");
+  if(!btn || !label || !arc) return;
+
+  const mins = Math.floor(timerSecondsLeft / 60);
+  const secs = timerSecondsLeft % 60;
+  const CIRC = 56.5; // 2π × r (r=9)
+  const progress = timerSecondsLeft / TIMER_DURATION;
+
+  btn.className = timerState === "running" ? "running" :
+                  timerState === "done"    ? "done"    : "";
+
+  if(timerState === "done") {
+    label.textContent = "✓ Done!";
+    arc.style.stroke  = "#4ade80";
+    arc.style.strokeDashoffset = "0";
+  } else {
+    label.textContent = mins + ":" + String(secs).padStart(2,"0");
+    arc.style.stroke  = timerState === "running"
+      ? (progress > 0.5 ? "#f59e0b" : progress > 0.2 ? "#fb923c" : "#f87171")
+      : "#f59e0b";
+    arc.style.strokeDashoffset = String(CIRC * (1 - progress));
+  }
+}
+
+function playTimerChime() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [[523,0],[659,.15],[784,.3],[1047,.5]].forEach(([freq, when]) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = "sine";
+      gain.gain.setValueAtTime(0.28, ctx.currentTime + when);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + when + 0.6);
+      osc.start(ctx.currentTime + when);
+      osc.stop(ctx.currentTime  + when + 0.7);
+    });
+  } catch(e) { /* audio not available */ }
 }
 
 /* ─── BOOT ──────────────────────────────────────────────────── */
