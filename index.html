@@ -80,6 +80,11 @@
   #timer-btn.done{border-color:var(--c-green);color:var(--c-green);background:var(--c-green-11);animation:pulse .8s ease 3}
   #timer-ring{width:22px;height:22px;flex-shrink:0}
   #timer-ring circle{transition:stroke-dashoffset .9s linear;transform-origin:center;transform:rotate(-90deg)}
+  /* Read-only history view — board is frozen: kill interactivity, hide entry fields */
+  #content.readonly button{pointer-events:none;opacity:.55}
+  #content.readonly input,#content.readonly textarea{display:none}
+  #history-banner{background:var(--c-indigo-800);border-bottom:2px solid var(--c-indigo-400);padding:10px 28px;display:flex;justify-content:space-between;align-items:center;gap:16px;font-size:13px;color:var(--c-slate-100)}
+  #history-banner button{background:var(--c-indigo);color:var(--c-white);border:none;border-radius:8px;padding:7px 16px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -119,6 +124,12 @@
         <div id="header-date"></div>
       </div>
     </div>
+  </div>
+
+  <!-- HISTORY BANNER (read-only viewing of a past sprint) -->
+  <div id="history-banner" style="display:none">
+    <span id="history-banner-text"></span>
+    <button onclick="returnToLive()">Return to live sprint →</button>
   </div>
 
   <!-- NAV -->
@@ -775,6 +786,11 @@ let myNoteVotes = LS.get('myNoteVotes') || {};  // { noteId: true }
 let currentTab = "checkin";
 let connected  = false;
 
+// Read-only history view: when set, the board shows a frozen past sprint and
+// every write is blocked (see fw/ftx). sprintNum still tracks the LIVE sprint.
+let isHistory     = false;
+let viewingSprint = null;
+
 /* ─── FIREBASE LISTENERS ────────────────────────────────────── */
 let _sprintListenersPath = null; // track which path listeners are attached to
 
@@ -811,6 +827,9 @@ function initMetaListeners() {
     if(v && v !== sprintNum) {
       sprintNum = v;
       SPRINT    = "s" + v;
+      // Viewing history is browser-local: track the new live sprint for the
+      // banner/picker but don't disturb the frozen view or re-attach listeners.
+      if(isHistory) { updateHistoryBanner(); return; }
       updateHeader();
       initListeners(); // re-attach to new path
       render(false);
@@ -833,10 +852,101 @@ function objToArr(obj) {
   return Object.values(obj);
 }
 
+/* ─── HISTORY VIEW (read-only) ──────────────────────────────── */
+// Load a past sprint into the shared render state WITHOUT switching the live
+// sprint for anyone. Live listeners are detached so their pushes can't overwrite
+// the frozen snapshot; writes are blocked via isHistory in fw/ftx.
+async function viewSprint(n) {
+  if(isHistory && n === viewingSprint) { closeSettings(); return; }
+  // Detach the live sprint's listeners so remote updates stop flowing in
+  if(_sprintListenersPath) { db.ref("sprints/" + _sprintListenersPath).off(); _sprintListenersPath = null; }
+  isHistory     = true;
+  viewingSprint = n;
+  try {
+    const snap = await db.ref("sprints/s" + n).once("value");
+    const d = snap.val() || {};
+    moodVotes      = d.moodVotes   || {};
+    healthVotes    = d.healthVotes || {};
+    notes          = d.notes       || {well:[],bad:[],ideas:[]};
+    celebrate      = objToArr(d.celebrate);
+    actions        = objToArr(d.actions);
+    prevActions    = objToArr(d.prevActions);
+    nextVotes      = d.nextVotes      || {};
+    importedHealth = d.importedHealth || null;
+    importedMood   = d.importedMood   || null;
+    nextNotes      = objToArr(d.nextNotes);
+  } catch(e) { console.error(e); }
+  updateHistoryBanner();
+  updateHeader();
+  render(false);
+  closeSettings();
+}
+
+function returnToLive() {
+  isHistory     = false;
+  viewingSprint = null;
+  // sprintNum/SPRINT still point at the live sprint — just re-attach its
+  // listeners, which repopulate the shared state from live data.
+  initListeners();
+  updateHistoryBanner();
+  updateHeader();
+  render(false);
+}
+
+function updateHistoryBanner() {
+  const banner = document.getElementById("history-banner");
+  const text   = document.getElementById("history-banner-text");
+  if(!banner) return;
+  if(isHistory) {
+    banner.style.display = "flex";
+    if(text) text.textContent = "👁 Viewing Sprint " + viewingSprint + " — read-only. The live sprint is " + sprintNum + ".";
+  } else {
+    banner.style.display = "none";
+  }
+}
+
+// Populate the Settings picker with every sprint stored in Firebase
+async function loadSprintList() {
+  const el = document.getElementById("sprint-browse-list");
+  if(!el) return;
+  try {
+    const snap = await db.ref("sprints").once("value");
+    const all  = snap.val() || {};
+    const nums = Object.keys(all)
+      .filter(k => /^s\d+$/.test(k))
+      .map(k => parseInt(k.slice(1), 10))
+      .sort((a, b) => b - a);
+    if(!nums.length) { el.innerHTML = `<span style="font-style:italic">No sprints found.</span>`; return; }
+    el.innerHTML = nums.map(n => {
+      const isLive    = n === sprintNum;
+      const isViewing = isHistory && n === viewingSprint;
+      let right;
+      if(isViewing) {
+        right = `<span style="color:var(--c-indigo-400);font-weight:700">👁 Viewing</span>`;
+      } else if(isLive) {
+        right = isHistory
+          ? `<button onclick="returnToLive()" style="background:var(--c-green-700);color:var(--c-white);border:none;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer">Return to live</button>`
+          : `<span style="color:var(--c-green);font-weight:700">● Live</span>`;
+      } else {
+        right = `<button onclick="viewSprint(${n})" style="background:var(--c-indigo);color:var(--c-white);border:none;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer">View</button>`;
+      }
+      return `<div style="display:flex;justify-content:space-between;align-items:center;background:var(--c-slate-900);border:1px solid ${isViewing?"var(--c-indigo)":isLive?"var(--c-green-panel-border)":"var(--c-slate-700)"};border-radius:8px;padding:9px 14px">
+        <span style="font-weight:700;color:var(--c-slate-200)">Sprint ${n}${isLive?'<span style="color:var(--c-slate-500);font-weight:400"> · current</span>':''}</span>
+        ${right}
+      </div>`;
+    }).join("");
+  } catch(e) {
+    console.error(e);
+    el.innerHTML = `<span style="color:var(--c-red)">⚠️ Couldn't load sprint list — check console.</span>`;
+  }
+}
+
 /* ─── WRITE HELPERS ─────────────────────────────────────────── */
-const fw = (path, val) => ref(path).set(val);
+// All board writes funnel through fw/ftx — blocking them here is the single
+// hard guarantee that a read-only history view can't mutate a past sprint.
+const fw = (path, val) => { if(isHistory) return Promise.resolve(); return ref(path).set(val); };
 // Atomic transaction — safe for concurrent votes from multiple browsers
-const ftx = (path, fn) => ref(path).transaction(fn);
+const ftx = (path, fn) => { if(isHistory) return Promise.resolve(); return ref(path).transaction(fn); };
 
 /* ─── VOTE HANDLERS ─────────────────────────────────────────── */
 function castMoodVote(id) {
@@ -1241,11 +1351,12 @@ function updateHeader() {
   const hd = document.getElementById("header-date");
   const ht = document.getElementById("header-title");
   const hb = document.getElementById("header-brand");
+  const shown = isHistory ? viewingSprint : sprintNum;
   if(ha) ha.textContent = "✅ "+prevActions.filter(a=>a.done).length+"/"+prevActions.length+" previous actions";
   if(hd) hd.textContent = new Date().toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
   if(hb) hb.textContent = COPY.brand;
-  if(ht) ht.textContent = COPY.title(sprintNum);
-  document.title = COPY.title(sprintNum);
+  if(ht) ht.textContent = COPY.title(shown);
+  document.title = COPY.title(shown);
 }
 
 /* ─── PATCH DISPATCHER ─────────────────────────────────────── */
@@ -1558,6 +1669,7 @@ function patchNextUI() {
 function render(animate) {
   const content = document.getElementById("content");
   if(!content) return;
+  content.classList.toggle("readonly", isHistory);
 
   // Preserve any input the user is currently typing in
   const activeEl    = document.activeElement;
@@ -2319,6 +2431,19 @@ function renderExport(panel) {
   info.innerHTML = `<span style="font-size:16px">🔥</span><div style="font-size:13px;color:var(--c-green-300);line-height:1.6"><strong>Firebase Realtime Database is active.</strong> All votes, notes, wins and actions sync in real-time across everyone's browsers. Data persists indefinitely — closing the tab or refreshing won't lose anything.<br/>Between sprints, Export a snapshot below, paste it somewhere safe, then Import it into the next sprint's board.</div>`;
   panel.appendChild(info);
 
+  // Browse previous sprints (read-only)
+  const browseBox = document.createElement("div");
+  browseBox.style.cssText = "background:var(--c-slate-800);border:1px solid var(--c-indigo-800);border-radius:12px;padding:20px 24px;margin-bottom:16px";
+  browseBox.innerHTML = `
+    <div style="font-size:15px;font-weight:800;color:var(--c-slate-100);margin-bottom:6px">👁 Browse Previous Sprints</div>
+    <div style="font-size:13px;color:var(--c-slate-500);margin-bottom:14px">Open a past sprint <strong style="color:var(--c-indigo-400)">read-only</strong> — you can look but not change its content, and no one else's board is affected. Use “Return to live sprint” to come back.</div>
+    <div id="sprint-browse-list" style="display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--c-slate-500)">Loading sprints…</div>`;
+  panel.appendChild(browseBox);
+  loadSprintList();
+
+  // The controls below mutate shared data — hide them while viewing history.
+  if(isHistory) { return; }
+
   // Sprint number control
   const sprintBox = document.createElement("div");
   sprintBox.style.cssText = "background:var(--c-slate-800);border:1px solid var(--c-slate-700);border-radius:12px;padding:20px 24px;margin-bottom:16px";
@@ -2441,6 +2566,7 @@ function startLocalTicker() {
 }
 
 function timerClick() {
+  if(isHistory) return; // timer is shared/live — don't touch it from a history view
   const running = timerData.state === "running" && timerRemaining() > 0;
   if(running) {
     // Second click while running → reset for everyone
