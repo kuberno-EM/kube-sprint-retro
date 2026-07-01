@@ -456,13 +456,15 @@ function addNote(col) {
 }
 
 function upvoteNote(col, id) {
-  if(myNoteVotes[id]) return;
-  myNoteVotes = {...myNoteVotes, [id]:true};
+  // Toggle: if this browser already voted, remove the vote; otherwise add it.
+  const removing = !!myNoteVotes[id];
+  const upMy = {...myNoteVotes};
+  if(removing) delete upMy[id]; else upMy[id] = true;
+  myNoteVotes = upMy;
   LS.set('myNoteVotes', myNoteVotes);
-  // Find the index of this note in the array in Firebase and increment atomically
   ftx("notes/"+col, current => {
     const arr = current ? Object.values(current) : [];
-    const updated = arr.map(n => n.id===id ? {...n, votes:(n.votes||0)+1} : n)
+    const updated = arr.map(n => n.id===id ? {...n, votes:Math.max(0,(n.votes||0)+(removing?-1:1))} : n)
                        .sort((a,b)=>b.votes-a.votes);
     return updated;
   });
@@ -955,7 +957,7 @@ function patchRetroUI() {
         const voteBtn = existing.querySelector(".vote-count");
         if(voteBtn) { voteBtn.textContent = n.votes; voteBtn.style.color = n.votes>0?col.accent:"#64748b"; }
         const upBtn = existing.querySelector(".upvote-btn");
-        if(upBtn) { upBtn.style.opacity = alreadyVoted?"0.45":"1"; upBtn.style.cursor = alreadyVoted?"not-allowed":"pointer"; }
+        if(upBtn) { upBtn.style.cursor = "pointer"; upBtn.style.opacity = "1"; upBtn.style.boxShadow = alreadyVoted?`0 0 0 2px ${col.accent}`:"none"; upBtn.title = alreadyVoted?"Click to remove your vote":"Upvote"; }
         // Re-order in place to match the (vote-sorted) array. appendChild moves the
         // live node, so any open inline-edit on it is preserved.
         listEl.appendChild(existing);
@@ -1066,7 +1068,7 @@ function patchNextUI() {
       const voteCount = existing.querySelector(".vote-count");
       const upBtn     = existing.querySelector(".upvote-btn");
       if(voteCount) { voteCount.textContent = n.votes; voteCount.style.color = n.votes>0?"#818cf8":"#64748b"; }
-      if(upBtn)     { upBtn.style.opacity = alreadyVoted?"0.45":"1"; upBtn.style.cursor = alreadyVoted?"not-allowed":"pointer"; }
+      if(upBtn)     { upBtn.style.cursor = "pointer"; upBtn.style.opacity = "1"; upBtn.style.boxShadow = alreadyVoted?"0 0 0 2px #6366f1":"none"; upBtn.title = alreadyVoted?"Click to remove your vote":"Upvote"; }
       listEl.appendChild(existing);
       return;
     }
@@ -1584,7 +1586,7 @@ function renderRetro(panel) {
                 ${n.creatorId===MY_ID?`
                 <button onclick="startInlineEdit('${eid}','${n.text.replace(/'/g,"\'")}',null)" title="Edit" style="background:none;border:none;cursor:pointer;font-size:12px;color:#64748b;padding:2px 4px">✏️</button>
                 <button onclick="deleteNote('${col.id}',${n.id})" title="Delete" style="background:none;border:none;cursor:pointer;font-size:12px;color:#64748b;padding:2px 4px">✕</button>`:""}
-                <button class="upvote-btn" onclick="upvoteNote('${col.id}',${n.id})" title="${myNoteVotes[n.id]?'Already voted':''}" style="display:flex;flex-direction:column;align-items:center;gap:1px;background:${n.votes>0?col.accent+"22":"rgba(255,255,255,.5)"};border:1.5px solid ${n.votes>0?col.accent:"rgba(0,0,0,.12)"};border-radius:7px;padding:4px 7px;min-width:34px;cursor:${myNoteVotes[n.id]?"not-allowed":"pointer"};opacity:${myNoteVotes[n.id]?0.45:1}">
+                <button class="upvote-btn" onclick="upvoteNote('${col.id}',${n.id})" title="${myNoteVotes[n.id]?'Click to remove your vote':'Upvote'}" style="display:flex;flex-direction:column;align-items:center;gap:1px;background:${n.votes>0?col.accent+"22":"rgba(255,255,255,.5)"};border:1.5px solid ${n.votes>0?col.accent:"rgba(0,0,0,.12)"};border-radius:7px;padding:4px 7px;min-width:34px;cursor:pointer;box-shadow:${myNoteVotes[n.id]?`0 0 0 2px ${col.accent}`:"none"}">
                   <span style="font-size:11px;line-height:1">▲</span>
                   <span class="vote-count" style="font-size:12px;font-weight:800;color:${n.votes>0?col.accent:"#64748b"};line-height:1;margin-top:1px">${n.votes}</span>
                 </button>
@@ -1743,12 +1745,14 @@ function addNextNote() {
 }
 
 function upvoteNextNote(id) {
-  if(myNoteVotes[id]) return;
-  myNoteVotes = {...myNoteVotes, [id]:true};
+  const removing = !!myNoteVotes[id];
+  const upMy = {...myNoteVotes};
+  if(removing) delete upMy[id]; else upMy[id] = true;
+  myNoteVotes = upMy;
   LS.set('myNoteVotes', myNoteVotes);
   ftx("nextNotes", current => {
     const arr = current ? Object.values(current) : [];
-    return arr.map(n => n.id===id ? {...n, votes:(n.votes||0)+1} : n)
+    return arr.map(n => n.id===id ? {...n, votes:Math.max(0,(n.votes||0)+(removing?-1:1))} : n)
               .sort((a,b)=>b.votes-a.votes);
   });
 }
@@ -1819,7 +1823,7 @@ function renderNext(panel) {
               ${n.creatorId===MY_ID?`
               <button onclick="startInlineEdit('${eid}','${n.text.replace(/'/g,"\'")}',null)" title="Edit" style="background:none;border:none;cursor:pointer;font-size:12px;color:#64748b;padding:2px 4px">✏️</button>
               <button onclick="deleteNextNote(${n.id})" title="Delete" style="background:none;border:none;cursor:pointer;font-size:12px;color:#64748b;padding:2px 4px">✕</button>`:""}
-              <button class="upvote-btn" onclick="upvoteNextNote(${n.id})" title="${myNoteVotes[n.id]?'Already voted':''}" style="display:flex;flex-direction:column;align-items:center;gap:1px;background:${n.votes>0?"#6366f122":"rgba(255,255,255,.05)"};border:1.5px solid ${n.votes>0?"#6366f1":"#334155"};border-radius:7px;padding:4px 7px;min-width:34px;cursor:${myNoteVotes[n.id]?"not-allowed":"pointer"};opacity:${myNoteVotes[n.id]?0.45:1}">
+              <button class="upvote-btn" onclick="upvoteNextNote(${n.id})" title="${myNoteVotes[n.id]?'Click to remove your vote':'Upvote'}" style="display:flex;flex-direction:column;align-items:center;gap:1px;background:${n.votes>0?"#6366f122":"rgba(255,255,255,.05)"};border:1.5px solid ${n.votes>0?"#6366f1":"#334155"};border-radius:7px;padding:4px 7px;min-width:34px;cursor:pointer;box-shadow:${myNoteVotes[n.id]?"0 0 0 2px #6366f1":"none"}">
                 <span style="font-size:11px;line-height:1;color:#94a3b8">▲</span>
                 <span class="vote-count" style="font-size:12px;font-weight:800;color:${n.votes>0?"#818cf8":"#64748b"};line-height:1;margin-top:1px">${n.votes}</span>
               </button>
@@ -1929,36 +1933,70 @@ function renderExport(panel) {
   panel.appendChild(danger);
 }
 
-/* ─── TIMER ─────────────────────────────────────────────────── */
+/* ─── TIMER (synced across everyone via Firebase) ───────────── */
+// We store WHEN the timer started (a Firebase server timestamp) rather than a
+// ticking count. Each browser computes the remaining time locally using the
+// server clock offset, so start/reset reflects on every screen with no drift.
 const TIMER_DURATION = 4 * 60; // seconds
-let timerSecondsLeft = TIMER_DURATION;
-let timerInterval    = null;
-let timerState       = "idle"; // idle | running | done
+let timerData     = {state:"idle", startedAt:null, duration:TIMER_DURATION};
+let timerInterval = null;
+let serverOffset  = 0;     // ms difference between this browser and the server clock
+let timerChimed   = false; // ensures the end chime fires once per run
+
+const timerRef = () => db.ref("sprints/meta/timer");
+function serverNow() { return Date.now() + serverOffset; }
+
+function timerRemaining() {
+  const dur = timerData.duration || TIMER_DURATION;
+  if(timerData.state === "running" && timerData.startedAt) {
+    const elapsed = (serverNow() - timerData.startedAt) / 1000;
+    return Math.max(0, Math.ceil(dur - elapsed));
+  }
+  if(timerData.state === "done") return 0;
+  return dur; // idle
+}
+
+function initTimerSync() {
+  db.ref(".info/serverTimeOffset").on("value", s => {
+    serverOffset = s.val() || 0;
+    updateTimerUI();
+  });
+  timerRef().on("value", s => {
+    const v = s.val();
+    timerData = (v && v.state) ? v : {state:"idle", startedAt:null, duration:TIMER_DURATION};
+    // A brand-new run should be allowed to chime again on this browser
+    if(timerData.state === "running" && timerRemaining() > 0) timerChimed = false;
+    startLocalTicker();
+  });
+}
+
+function startLocalTicker() {
+  if(timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  const running = timerData.state === "running";
+  // If we joined after it already expired, don't chime retroactively
+  if(running && timerRemaining() <= 0) timerChimed = true;
+  updateTimerUI();
+  if(running && timerRemaining() > 0) {
+    timerInterval = setInterval(() => {
+      updateTimerUI();
+      if(timerRemaining() <= 0) {
+        clearInterval(timerInterval); timerInterval = null;
+        if(!timerChimed) { timerChimed = true; playTimerChime(); }
+        updateTimerUI();
+      }
+    }, 500);
+  }
+}
 
 function timerClick() {
-  if(timerState === "idle" || timerState === "done") {
-    // Start / restart
-    timerSecondsLeft = TIMER_DURATION;
-    timerState = "running";
-    updateTimerUI();
-    timerInterval = setInterval(() => {
-      timerSecondsLeft--;
-      if(timerSecondsLeft <= 0) {
-        timerSecondsLeft = 0;
-        timerState = "done";
-        clearInterval(timerInterval);
-        timerInterval = null;
-        playTimerChime();
-      }
-      updateTimerUI();
-    }, 1000);
-  } else if(timerState === "running") {
-    // Pause / reset on second click while running
-    clearInterval(timerInterval);
-    timerInterval    = null;
-    timerSecondsLeft = TIMER_DURATION;
-    timerState       = "idle";
-    updateTimerUI();
+  const running = timerData.state === "running" && timerRemaining() > 0;
+  if(running) {
+    // Second click while running → reset for everyone
+    timerRef().set({state:"idle", startedAt:null, duration:TIMER_DURATION});
+  } else {
+    // Start / restart for everyone
+    timerChimed = false;
+    timerRef().set({state:"running", startedAt: firebase.database.ServerValue.TIMESTAMP, duration:TIMER_DURATION});
   }
 }
 
@@ -1968,21 +2006,24 @@ function updateTimerUI() {
   const arc   = document.getElementById("timer-arc");
   if(!btn || !label || !arc) return;
 
-  const mins = Math.floor(timerSecondsLeft / 60);
-  const secs = timerSecondsLeft % 60;
-  const CIRC = 56.5; // 2π × r (r=9)
-  const progress = timerSecondsLeft / TIMER_DURATION;
+  const dur       = timerData.duration || TIMER_DURATION;
+  const remaining = timerRemaining();
+  const running   = timerData.state === "running" && remaining > 0;
+  const done      = (timerData.state === "running" && remaining <= 0) || timerData.state === "done";
+  const CIRC      = 56.5; // 2π × r (r=9)
+  const progress  = remaining / dur;
 
-  btn.className = timerState === "running" ? "running" :
-                  timerState === "done"    ? "done"    : "";
+  btn.className = running ? "running" : done ? "done" : "";
 
-  if(timerState === "done") {
+  if(done) {
     label.textContent = "✓ Done!";
     arc.style.stroke  = "#4ade80";
     arc.style.strokeDashoffset = "0";
   } else {
+    const mins = Math.floor(remaining / 60);
+    const secs = remaining % 60;
     label.textContent = mins + ":" + String(secs).padStart(2,"0");
-    arc.style.stroke  = timerState === "running"
+    arc.style.stroke  = running
       ? (progress > 0.5 ? "#f59e0b" : progress > 0.2 ? "#fb923c" : "#f87171")
       : "#f59e0b";
     arc.style.strokeDashoffset = String(CIRC * (1 - progress));
@@ -2018,6 +2059,7 @@ window.addEventListener("load", async ()=>{
   updateHeader();
   initListeners();
   initMetaListeners();
+  initTimerSync();
 
   // Hide loader once first data arrives (or after 2s)
   let shown = false;
