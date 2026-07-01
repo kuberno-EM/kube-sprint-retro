@@ -7,8 +7,46 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <style>
+  /* ═══ THEME PALETTE ═══════════════════════════════════════════════════
+     Single source of truth for the app's colours. Change these to re-skin
+     the whole board. Semantic content colours (mood faces, RAG status,
+     retro-column accents) live in the STATUS / MOODS / NOTE_COLS objects in
+     the script below; the *-NN suffixed vars are pre-baked alpha tints.   */
+  :root{
+    /* neutral chrome (dark navy → light text) */
+    --c-slate-950:#020617;  --c-slate-900:#0f172a;  --c-slate-800:#1e293b;
+    --c-slate-700:#334155;  --c-slate-600:#475569;  --c-slate-500:#64748b;
+    --c-slate-400:#94a3b8;  --c-slate-200:#e2e8f0;  --c-slate-100:#f1f5f9;
+    --c-ink:#1c1917;        --c-white:#fff;
+    /* brand accent */
+    --c-accent:#f59e0b;
+    /* greens */
+    --c-green:#4ade80;      --c-green-300:#86efac;  --c-green-600:#22c55e;
+    --c-green-700:#16a34a;  --c-green-800:#15803d;  --c-green-900:#14532d;
+    --c-lime:#a3e635;       --c-green-panel:#0f2a1a; --c-green-panel-border:#166534;
+    /* reds */
+    --c-red:#f87171;        --c-red-300:#fca5a5;    --c-red-600:#ef4444;
+    --c-red-700:#dc2626;    --c-red-900:#7f1d1d;    --c-red-950:#450a0a;
+    /* ambers / yellows / browns */
+    --c-orange:#fb923c;     --c-yellow:#fde047;     --c-amber-200:#fde68a;
+    --c-gold:#ca8a04;       --c-brown:#78350f;      --c-cream:#fffbeb;
+    --c-well-bg:#fefce8;
+    /* blues / indigos */
+    --c-blue:#3b82f6;       --c-blue-300:#93c5fd;   --c-blue-400:#60a5fa;
+    --c-blue-800:#1e40af;   --c-blue-950:#1e3a5f;
+    --c-indigo:#6366f1;     --c-indigo-400:#818cf8; --c-indigo-800:#4338ca;
+    /* pinks (Barbie / "didn't go well" column) */
+    --c-pink:#f9a8d4;       --c-pink-600:#db2777;   --c-pink-50:#fdf2f8;
+    --c-ideas-bg:#f0fdf4;
+    /* pre-baked alpha tints (base colour + alpha byte) */
+    --c-accent-11:#f59e0b11; --c-accent-22:#f59e0b22; --c-accent-55:#f59e0b55;
+    --c-green-11:#4ade8011;  --c-green-900-18:#14532d18;
+    --c-red-900-18:#7f1d1d18; --c-red-900-22:#7f1d1d22;
+    --c-blue-88:#3b82f688;
+    --c-indigo-22:#6366f122;  --c-indigo-44:#6366f144; --c-indigo-800-44:#4338ca44;
+  }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Trebuchet MS',Verdana,sans-serif;background:#0f172a;min-height:100vh;color:#f1f5f9}
+  body{font-family:'Trebuchet MS',Verdana,sans-serif;background:var(--c-slate-900);min-height:100vh;color:var(--c-slate-100)}
   button{font-family:inherit;cursor:pointer}
   input,textarea{font-family:inherit}
   @keyframes popIn{0%{transform:scale(.5) rotate(-4deg);opacity:0}70%{transform:scale(1.08) rotate(1deg);opacity:1}100%{transform:scale(1) rotate(var(--rot,0deg));opacity:1}}
@@ -19,27 +57,27 @@
   .note-card{animation:popIn .45s cubic-bezier(.34,1.56,.64,1) both}
   .bar-fill{animation:barGrow .6s ease both}
   .fade-up{animation:fadeUp .35s ease both}
-  .tab-btn{border:none;padding:11px 20px;font-size:13px;font-weight:500;letter-spacing:.02em;white-space:nowrap;transition:all .18s;background:transparent;color:#64748b}
-  .tab-btn.active{background:#f59e0b;color:#020617;font-weight:800}
+  .tab-btn{border:none;padding:11px 20px;font-size:13px;font-weight:500;letter-spacing:.02em;white-space:nowrap;transition:all .18s;background:transparent;color:var(--c-slate-500)}
+  .tab-btn.active{background:var(--c-accent);color:var(--c-slate-950);font-weight:800}
   table{width:100%;border-collapse:collapse}
-  th{padding:10px 16px;text-align:left;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.1em}
+  th{padding:10px 16px;text-align:left;font-size:11px;font-weight:700;color:var(--c-slate-500);text-transform:uppercase;letter-spacing:.1em}
   th.center{text-align:center}
   td{padding:13px 16px;font-size:14px}
-  tr{border-bottom:1px solid #1e293b;transition:background .3s}
-  .act-input{width:100%;background:#0f172a;border:1.5px solid #334155;border-radius:8px;padding:7px 10px;font-size:13px;color:#f1f5f9;outline:none}
+  tr{border-bottom:1px solid var(--c-slate-800);transition:background .3s}
+  .act-input{width:100%;background:var(--c-slate-900);border:1.5px solid var(--c-slate-700);border-radius:8px;padding:7px 10px;font-size:13px;color:var(--c-slate-100);outline:none}
   ::-webkit-scrollbar{height:4px;width:4px}
-  ::-webkit-scrollbar-track{background:#1e293b}
-  ::-webkit-scrollbar-thumb{background:#334155;border-radius:2px}
+  ::-webkit-scrollbar-track{background:var(--c-slate-800)}
+  ::-webkit-scrollbar-thumb{background:var(--c-slate-700);border-radius:2px}
   #settings-overlay{position:fixed;inset:0;z-index:100;display:none}
   #settings-overlay.open{display:block}
   #settings-backdrop{position:absolute;inset:0;background:rgba(2,6,23,.7);backdrop-filter:blur(3px)}
-  #settings-panel{position:absolute;top:0;right:0;height:100%;width:520px;max-width:100vw;background:#0f172a;border-left:2px solid #f59e0b;overflow-y:auto;padding:28px 28px 60px;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1)}
+  #settings-panel{position:absolute;top:0;right:0;height:100%;width:520px;max-width:100vw;background:var(--c-slate-900);border-left:2px solid var(--c-accent);overflow-y:auto;padding:28px 28px 60px;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1)}
   #settings-overlay.open #settings-panel{transform:translateX(0)}
-  .cog-btn{background:none;border:1.5px solid #334155;border-radius:8px;padding:6px 10px;color:#64748b;font-size:18px;transition:all .2s;line-height:1}
-  .cog-btn:hover{border-color:#f59e0b;color:#f59e0b}
-  #timer-btn{display:flex;align-items:center;gap:8px;background:#1e293b;border:1.5px solid #334155;border-radius:10px;padding:7px 14px;color:#94a3b8;font-size:13px;font-weight:700;transition:all .3s;cursor:pointer;font-family:inherit}
-  #timer-btn.running{border-color:#f59e0b;color:#f59e0b;background:#f59e0b11}
-  #timer-btn.done{border-color:#4ade80;color:#4ade80;background:#4ade8011;animation:pulse .8s ease 3}
+  .cog-btn{background:none;border:1.5px solid var(--c-slate-700);border-radius:8px;padding:6px 10px;color:var(--c-slate-500);font-size:18px;transition:all .2s;line-height:1}
+  .cog-btn:hover{border-color:var(--c-accent);color:var(--c-accent)}
+  #timer-btn{display:flex;align-items:center;gap:8px;background:var(--c-slate-800);border:1.5px solid var(--c-slate-700);border-radius:10px;padding:7px 14px;color:var(--c-slate-400);font-size:13px;font-weight:700;transition:all .3s;cursor:pointer;font-family:inherit}
+  #timer-btn.running{border-color:var(--c-accent);color:var(--c-accent);background:var(--c-accent-11)}
+  #timer-btn.done{border-color:var(--c-green);color:var(--c-green);background:var(--c-green-11);animation:pulse .8s ease 3}
   #timer-ring{width:22px;height:22px;flex-shrink:0}
   #timer-ring circle{transition:stroke-dashoffset .9s linear;transform-origin:center;transform:rotate(-90deg)}
 </style>
@@ -48,22 +86,22 @@
 
 <div id="loading" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:16px">
   <div style="font-size:36px">🖖</div>
-  <div style="font-size:16px;color:#64748b">Connecting to Firebase…</div>
-  <div style="width:32px;height:32px;border:3px solid #334155;border-top-color:#f59e0b;border-radius:50%;animation:spin 0.8s linear infinite"></div>
+  <div style="font-size:16px;color:var(--c-slate-500)">Connecting to Firebase…</div>
+  <div style="width:32px;height:32px;border:3px solid var(--c-slate-700);border-top-color:var(--c-accent);border-radius:50%;animation:spin 0.8s linear infinite"></div>
 </div>
 
 <div id="app" style="display:none">
 
   <!-- HEADER -->
-  <div id="header" style="background:#020617;border-bottom:2px solid #f59e0b;padding:14px 28px;display:flex;justify-content:space-between;align-items:center">
+  <div id="header" style="background:var(--c-slate-950);border-bottom:2px solid var(--c-accent);padding:14px 28px;display:flex;justify-content:space-between;align-items:center">
     <div>
-      <div style="font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:#f59e0b;margin-bottom:3px">Agile Ceremony</div>
+      <div style="font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:var(--c-accent);margin-bottom:3px">Agile Ceremony</div>
       <div id="header-title" style="font-size:20px;font-weight:800;letter-spacing:-.03em">Sprint 55 — Review Board 🖖</div>
     </div>
     <div style="display:flex;align-items:center;gap:20px">
       <div style="display:flex;align-items:center;gap:6px">
-        <div id="sync-dot" style="width:7px;height:7px;border-radius:50%;background:#f59e0b;animation:pulse 2s infinite"></div>
-        <span id="sync-label" style="font-size:11px;color:#475569">Connecting…</span>
+        <div id="sync-dot" style="width:7px;height:7px;border-radius:50%;background:var(--c-accent);animation:pulse 2s infinite"></div>
+        <span id="sync-label" style="font-size:11px;color:var(--c-slate-600)">Connecting…</span>
       </div>
       <!-- TIMER -->
       <button id="timer-btn" onclick="timerClick()" title="4 minute timer">
@@ -75,15 +113,15 @@
         <span id="timer-label">4:00</span>
       </button>
       <button class="cog-btn" onclick="openSettings()" title="Settings / Export / Import">⚙️</button>
-      <div style="text-align:right;font-size:12px;color:#64748b">
-        <div id="header-actions" style="color:#f59e0b;font-weight:700"></div>
+      <div style="text-align:right;font-size:12px;color:var(--c-slate-500)">
+        <div id="header-actions" style="color:var(--c-accent);font-weight:700"></div>
         <div id="header-date"></div>
       </div>
     </div>
   </div>
 
   <!-- NAV -->
-  <div style="display:flex;background:#020617;padding:0 28px;gap:2px;overflow-x:auto;border-bottom:1px solid #1e293b">
+  <div style="display:flex;background:var(--c-slate-950);padding:0 28px;gap:2px;overflow-x:auto;border-bottom:1px solid var(--c-slate-800)">
     <button class="tab-btn active" onclick="setTab('checkin')">👋 Check-in</button>
     <button class="tab-btn" onclick="setTab('wins')">🎉 Wins</button>
     <button class="tab-btn" onclick="setTab('mood')">🧠 Mood</button>
@@ -102,10 +140,10 @@
     <div id="settings-panel">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
         <div>
-          <div style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#f59e0b;margin-bottom:3px">Configuration</div>
-          <div style="font-size:18px;font-weight:900;color:#f1f5f9">Settings ⚙️</div>
+          <div style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--c-accent);margin-bottom:3px">Configuration</div>
+          <div style="font-size:18px;font-weight:900;color:var(--c-slate-100)">Settings ⚙️</div>
         </div>
-        <button onclick="closeSettings()" style="background:none;border:1.5px solid #334155;border-radius:8px;padding:6px 12px;color:#64748b;font-size:13px;font-weight:700">✕ Close</button>
+        <button onclick="closeSettings()" style="background:none;border:1.5px solid var(--c-slate-700);border-radius:8px;padding:6px 12px;color:var(--c-slate-500);font-size:13px;font-weight:700">✕ Close</button>
       </div>
       <div id="settings-content"></div>
     </div>
@@ -375,7 +413,7 @@ function initMetaListeners() {
     connected = s.val();
     const dot   = document.getElementById("sync-dot");
     const label = document.getElementById("sync-label");
-    if(dot){dot.style.background = connected ? "#4ade80" : "#f87171";}
+    if(dot){dot.style.background = connected ? "var(--c-green)" : "var(--c-red)";}
     if(label){label.textContent  = connected ? "Live · Firebase" : "Reconnecting…";}
   });
 }
@@ -531,8 +569,8 @@ function handleExport() {
   const payload = buildExportPayload();
   navigator.clipboard.writeText(JSON.stringify(payload,null,2)).then(()=>{
     const btn = document.getElementById("export-btn");
-    if(btn){btn.textContent="✓ Copied to clipboard!";btn.style.background="#14532d";btn.style.color="#86efac";}
-    setTimeout(()=>{if(btn){btn.textContent="📋 Copy sprint data to clipboard";btn.style.background="#f59e0b";btn.style.color="#020617";}},3000);
+    if(btn){btn.textContent="✓ Copied to clipboard!";btn.style.background="var(--c-green-900)";btn.style.color="var(--c-green-300)";}
+    setTimeout(()=>{if(btn){btn.textContent="📋 Copy sprint data to clipboard";btn.style.background="var(--c-accent)";btn.style.color="var(--c-slate-950)";}},3000);
   });
 }
 
@@ -585,7 +623,7 @@ async function applySprintNum() {
   if(err) { err.style.display="none"; err.textContent=""; }
 
   // Show working state
-  if(ok){ ok.style.display="inline"; ok.style.color="#f59e0b"; ok.textContent="⏳ Switching sprint…"; }
+  if(ok){ ok.style.display="inline"; ok.style.color="var(--c-accent)"; ok.textContent="⏳ Switching sprint…"; }
 
   try {
     // ── Read previous sprint data from Firebase ──
@@ -652,11 +690,11 @@ async function applySprintNum() {
     updateHeader();
     render(false);
     openSettings();
-    if(ok){ ok.style.color="#4ade80"; ok.textContent="✓ Switched to Sprint "+num+" — actions and baselines carried forward"; }
+    if(ok){ ok.style.color="var(--c-green)"; ok.textContent="✓ Switched to Sprint "+num+" — actions and baselines carried forward"; }
   } catch(e) {
     console.error(e);
     if(ok)  ok.style.display="none";
-    if(err) { err.style.display="inline"; err.style.color="#f87171"; err.textContent="⚠️ Switch failed — check console"; }
+    if(err) { err.style.display="inline"; err.style.color="var(--c-red)"; err.textContent="⚠️ Switch failed — check console"; }
   }
 }
 
@@ -690,14 +728,14 @@ function handleExportCurrent() {
     const btn = document.getElementById("export-current-btn");
     if(btn) {
       btn.textContent = "✓ Copied to clipboard!";
-      btn.style.background = "#14532d";
-      btn.style.color = "#86efac";
+      btn.style.background = "var(--c-green-900)";
+      btn.style.color = "var(--c-green-300)";
       setTimeout(() => {
         const b = document.getElementById("export-current-btn");
         if(b) {
           b.textContent = "📋 Copy Sprint " + sprintNum + " to clipboard";
-          b.style.background = "#f59e0b";
-          b.style.color = "#020617";
+          b.style.background = "var(--c-accent)";
+          b.style.color = "var(--c-slate-950)";
         }
       }, 3000);
     }
@@ -722,8 +760,8 @@ async function handleExportAll() {
     a.download = `sprint-retro-all-sprints-${new Date().toISOString().slice(0,10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    if(btn){ btn.textContent="✓ Downloaded!"; btn.style.background="#14532d"; btn.style.color="#86efac"; btn.style.opacity="1"; }
-    setTimeout(()=>{ if(btn){ btn.textContent="📥 Download all sprint data"; btn.style.background="#334155"; btn.style.color="#e2e8f0"; }},3000);
+    if(btn){ btn.textContent="✓ Downloaded!"; btn.style.background="var(--c-green-900)"; btn.style.color="var(--c-green-300)"; btn.style.opacity="1"; }
+    setTimeout(()=>{ if(btn){ btn.textContent="📥 Download all sprint data"; btn.style.background="var(--c-slate-700)"; btn.style.color="var(--c-slate-200)"; }},3000);
   } catch(e) {
     console.error(e);
     if(btn){ btn.textContent="⚠️ Failed — check console"; btn.style.opacity="1"; }
@@ -761,7 +799,7 @@ function trendOf(prev,curr) {
   if(!curr) return null;
   const o={red:0,amber:1,green:2};
   const d=o[curr]-o[prev];
-  return d>0?{icon:"↑",color:"#16a34a"}:d<0?{icon:"↓",color:"#dc2626"}:{icon:"→",color:"#94a3b8"};
+  return d>0?{icon:"↑",color:"var(--c-green-700)"}:d<0?{icon:"↓",color:"var(--c-red-700)"}:{icon:"→",color:"var(--c-slate-400)"};
 }
 function h(tag,attrs,children){
   const el=document.createElement(tag);
@@ -832,8 +870,8 @@ function patchMoodUI() {
     const count = moodVotes[m.id]||0;
     const pct   = totalMood>0 ? (count/totalMood)*100 : 0;
     const isMy  = myMoodVote===m.id;
-    btn.style.background  = isMy ? m.col+"33" : count>0 ? m.col+"11" : "#1e293b";
-    btn.style.borderColor = isMy ? m.col : count>0 ? m.col+"55" : "#334155";
+    btn.style.background  = isMy ? m.col+"33" : count>0 ? m.col+"11" : "var(--c-slate-800)";
+    btn.style.borderColor = isMy ? m.col : count>0 ? m.col+"55" : "var(--c-slate-700)";
     btn.style.boxShadow   = isMy ? `0 0 12px ${m.col}66` : "none";
     btn.style.transform   = isMy ? "scale(1.05)" : "scale(1)";
     // Update fill bar inside button
@@ -847,7 +885,7 @@ function patchMoodUI() {
   const liveBar = document.getElementById("mood-live-bar");
   if(liveBar && totalMood>0) {
     liveBar.innerHTML = `
-      <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">Live mood — ${totalMood} votes</div>
+      <div style="font-size:11px;font-weight:700;color:var(--c-slate-500);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">Live mood — ${totalMood} votes</div>
       <div style="display:flex;height:42px;border-radius:8px;overflow:hidden;gap:2px;align-items:center">
         ${MOODS.filter(m=>moodVotes[m.id]).map(m=>{const p=(moodVotes[m.id]/totalMood)*100;return `<div style="background:${m.col};width:${p}%;display:flex;align-items:center;justify-content:center;min-width:2px;height:100%;transition:width .4s ease;overflow:hidden">${p>8?moodImg(m,32):""}</div>`;}).join("")}
       </div>
@@ -864,16 +902,16 @@ function patchCheckinUI() {
   prevActions.forEach((a,i) => {
     const row = document.getElementById("prow-"+i);
     if(!row) return;
-    row.style.background = a.done ? "#14532d18" : "#7f1d1d18";
+    row.style.background = a.done ? "var(--c-green-900-18)" : "var(--c-red-900-18)";
     const doneBtn   = row.querySelector(".done-btn");
     const missedBtn = row.querySelector(".missed-btn");
     if(doneBtn) {
-      doneBtn.style.background = a.done ? "#14532d" : "#1e293b";
-      doneBtn.style.color      = a.done ? "#4ade80"  : "#475569";
+      doneBtn.style.background = a.done ? "var(--c-green-900)" : "var(--c-slate-800)";
+      doneBtn.style.color      = a.done ? "var(--c-green)"  : "var(--c-slate-600)";
     }
     if(missedBtn) {
-      missedBtn.style.background = a.done===false ? "#7f1d1d" : "#1e293b";
-      missedBtn.style.color      = a.done===false ? "#f87171"  : "#475569";
+      missedBtn.style.background = a.done===false ? "var(--c-red-900)" : "var(--c-slate-800)";
+      missedBtn.style.color      = a.done===false ? "var(--c-red)"  : "var(--c-slate-600)";
     }
   });
   // Update progress bar
@@ -883,8 +921,8 @@ function patchCheckinUI() {
   const label = document.getElementById("checkin-label");
   const doneSpan   = document.getElementById("checkin-done");
   const missedSpan = document.getElementById("checkin-missed");
-  if(bar)   { bar.style.width = total>0 ? (done/total*100)+"%" : "0%"; bar.style.background = done===total?"#4ade80":"#f59e0b"; }
-  if(label) { label.textContent = done+" / "+total+" done"; label.style.color = done===total?"#4ade80":"#f59e0b"; }
+  if(bar)   { bar.style.width = total>0 ? (done/total*100)+"%" : "0%"; bar.style.background = done===total?"var(--c-green)":"var(--c-accent)"; }
+  if(label) { label.textContent = done+" / "+total+" done"; label.style.color = done===total?"var(--c-green)":"var(--c-accent)"; }
   if(doneSpan)   doneSpan.textContent   = "✓ "+done+" done";
   if(missedSpan) missedSpan.textContent = "✗ "+(total-done)+" missed";
 }
@@ -900,25 +938,25 @@ function patchWinsUI() {
     const note = document.createElement("div");
     note.id = "win-"+w.id;
     note.className = "note-card";
-    note.style.cssText = `--rot:${rot}deg;transform:rotate(${rot}deg);background:#fde047;color:#1c1917;border-radius:4px;padding:14px 18px 20px;font-size:14px;font-weight:600;min-width:140px;max-width:200px;box-shadow:3px 4px 12px rgba(0,0,0,.35);line-height:1.4;position:relative`;
+    note.style.cssText = `--rot:${rot}deg;transform:rotate(${rot}deg);background:var(--c-yellow);color:var(--c-ink);border-radius:4px;padding:14px 18px 20px;font-size:14px;font-weight:600;min-width:140px;max-width:200px;box-shadow:3px 4px 12px rgba(0,0,0,.35);line-height:1.4;position:relative`;
     const cageLine = CAGE_LINES[(w.id||i) % CAGE_LINES.length];
     note.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
         <span style="font-size:20px">⭐</span>
         <div class="item-actions" style="display:flex;gap:2px">
           ${w.creatorId===MY_ID?`
-          <button onclick="startInlineEdit('win-${w.id}','${w.text.replace(/'/g,"\'")}',null)" title="Edit" style="background:rgba(0,0,0,.08);border:none;border-radius:4px;padding:2px 5px;font-size:11px;cursor:pointer;color:#78350f">✏️</button>
-          <button onclick="deleteWin(${w.id})" title="Delete" style="background:rgba(0,0,0,.08);border:none;border-radius:4px;padding:2px 5px;font-size:11px;cursor:pointer;color:#78350f">✕</button>`:""}
+          <button onclick="startInlineEdit('win-${w.id}','${w.text.replace(/'/g,"\'")}',null)" title="Edit" style="background:rgba(0,0,0,.08);border:none;border-radius:4px;padding:2px 5px;font-size:11px;cursor:pointer;color:var(--c-brown)">✏️</button>
+          <button onclick="deleteWin(${w.id})" title="Delete" style="background:rgba(0,0,0,.08);border:none;border-radius:4px;padding:2px 5px;font-size:11px;cursor:pointer;color:var(--c-brown)">✕</button>`:""}
         </div>
       </div>
       <span class="item-text">${w.text}</span>
       <div style="font-size:10px;color:rgba(28,25,23,.42);margin-top:10px;padding-top:8px;border-top:1px solid rgba(0,0,0,.08);font-style:italic;line-height:1.3;text-align:right">“${cageLine}”</div>
       <div class="item-edit-row" style="display:none;flex-direction:column;gap:6px;margin-top:8px">
-        <input style="width:100%;background:#fffbeb;border:1.5px solid #ca8a04;border-radius:6px;padding:5px 8px;font-size:13px;color:#1c1917;outline:none;box-sizing:border-box"
+        <input style="width:100%;background:var(--c-cream);border:1.5px solid var(--c-gold);border-radius:6px;padding:5px 8px;font-size:13px;color:var(--c-ink);outline:none;box-sizing:border-box"
           onkeydown="if(event.key==='Enter'){saveWinEdit(${w.id},this.value);cancelInlineEdit('win-${w.id}')}if(event.key==='Escape')cancelInlineEdit('win-${w.id}')"/>
         <div style="display:flex;gap:6px">
-          <button onclick="const inp=document.getElementById('win-${w.id}').querySelector('.item-edit-row input');saveWinEdit(${w.id},inp.value);cancelInlineEdit('win-${w.id}')" style="background:#ca8a04;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer">Save</button>
-          <button onclick="cancelInlineEdit('win-${w.id}')" style="background:#e2e8f0;color:#475569;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer">Cancel</button>
+          <button onclick="const inp=document.getElementById('win-${w.id}').querySelector('.item-edit-row input');saveWinEdit(${w.id},inp.value);cancelInlineEdit('win-${w.id}')" style="background:var(--c-gold);color:var(--c-white);border:none;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer">Save</button>
+          <button onclick="cancelInlineEdit('win-${w.id}')" style="background:var(--c-slate-200);color:var(--c-slate-600);border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer">Cancel</button>
         </div>
       </div>`;
     wall.appendChild(note);
@@ -941,7 +979,7 @@ function patchRetroUI() {
     const listEl = document.getElementById("retro-list-"+col.id);
     if(!listEl) return;
     if(colNotes.length === 0) {
-      listEl.innerHTML = `<div style="text-align:center;padding:24px 0;color:#475569;font-size:13px">Notes will appear here live ✨</div>`;
+      listEl.innerHTML = `<div style="text-align:center;padding:24px 0;color:var(--c-slate-600);font-size:13px">Notes will appear here live ✨</div>`;
       return;
     }
     colNotes.forEach((n,i) => {
@@ -953,9 +991,9 @@ function patchRetroUI() {
       if(existing) {
         existing.style.background  = isTop ? col.accent+"22" : col.bg;
         existing.style.borderColor = isTop ? col.accent : col.border;
-        existing.style.color       = isTop ? "#f1f5f9" : "#1c1917";
+        existing.style.color       = isTop ? "var(--c-slate-100)" : "var(--c-ink)";
         const voteBtn = existing.querySelector(".vote-count");
-        if(voteBtn) { voteBtn.textContent = n.votes; voteBtn.style.color = n.votes>0?col.accent:"#64748b"; }
+        if(voteBtn) { voteBtn.textContent = n.votes; voteBtn.style.color = n.votes>0?col.accent:"var(--c-slate-500)"; }
         const upBtn = existing.querySelector(".upvote-btn");
         if(upBtn) { upBtn.style.cursor = "pointer"; upBtn.style.opacity = "1"; upBtn.style.boxShadow = alreadyVoted?`0 0 0 2px ${col.accent}`:"none"; upBtn.title = alreadyVoted?"Click to remove your vote":"Upvote"; }
         // Re-order in place to match the (vote-sorted) array. appendChild moves the
@@ -966,7 +1004,7 @@ function patchRetroUI() {
       // New note — insert it
       const noteEl = document.createElement("div");
       noteEl.id = eid;
-      noteEl.style.cssText = `background:${isTop?col.accent+"22":col.bg};border:${isTop?2:1}px solid ${isTop?col.accent:col.border};border-radius:8px;padding:9px 10px 9px 12px;font-size:13px;color:${isTop?"#f1f5f9":"#1c1917"};font-weight:${isTop?700:500};line-height:1.4;margin-bottom:8px`;
+      noteEl.style.cssText = `background:${isTop?col.accent+"22":col.bg};border:${isTop?2:1}px solid ${isTop?col.accent:col.border};border-radius:8px;padding:9px 10px 9px 12px;font-size:13px;color:${isTop?"var(--c-slate-100)":"var(--c-ink)"};font-weight:${isTop?700:500};line-height:1.4;margin-bottom:8px`;
       noteEl.className = "note-card";
       noteEl.innerHTML = `
         <div style="display:flex;align-items:center;gap:8px">
@@ -974,19 +1012,19 @@ function patchRetroUI() {
           <span class="item-text" style="flex:1">${n.text}</span>
           <div class="item-actions" style="display:flex;align-items:center;gap:4px;flex-shrink:0">
             ${n.creatorId===MY_ID?`
-            <button onclick="startInlineEdit('${eid}','${n.text.replace(/'/g,"\'")}',null)" title="Edit" style="background:none;border:none;cursor:pointer;font-size:12px;color:#64748b;padding:2px 4px">✏️</button>
-            <button onclick="deleteNote('${col.id}',${n.id})" title="Delete" style="background:none;border:none;cursor:pointer;font-size:12px;color:#64748b;padding:2px 4px">✕</button>`:""}
+            <button onclick="startInlineEdit('${eid}','${n.text.replace(/'/g,"\'")}',null)" title="Edit" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--c-slate-500);padding:2px 4px">✏️</button>
+            <button onclick="deleteNote('${col.id}',${n.id})" title="Delete" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--c-slate-500);padding:2px 4px">✕</button>`:""}
             <button class="upvote-btn" onclick="upvoteNote('${col.id}',${n.id})" style="display:flex;flex-direction:column;align-items:center;gap:1px;background:${n.votes>0?col.accent+"22":"rgba(255,255,255,.5)"};border:1.5px solid ${n.votes>0?col.accent:"rgba(0,0,0,.12)"};border-radius:7px;padding:4px 7px;min-width:34px;cursor:${alreadyVoted?"not-allowed":"pointer"};opacity:${alreadyVoted?0.45:1}">
               <span style="font-size:11px;line-height:1">▲</span>
-              <span class="vote-count" style="font-size:12px;font-weight:800;color:${n.votes>0?col.accent:"#64748b"};line-height:1;margin-top:1px">${n.votes}</span>
+              <span class="vote-count" style="font-size:12px;font-weight:800;color:${n.votes>0?col.accent:"var(--c-slate-500)"};line-height:1;margin-top:1px">${n.votes}</span>
             </button>
           </div>
         </div>
         <div class="item-edit-row" style="display:none;gap:6px;margin-top:6px">
-          <input style="flex:1;background:${isTop?"#1e293b":"#fff"};border:1.5px solid ${col.accent};border-radius:6px;padding:5px 8px;font-size:13px;color:${isTop?"#f1f5f9":"#1c1917"};outline:none"
+          <input style="flex:1;background:${isTop?"var(--c-slate-800)":"var(--c-white)"};border:1.5px solid ${col.accent};border-radius:6px;padding:5px 8px;font-size:13px;color:${isTop?"var(--c-slate-100)":"var(--c-ink)"};outline:none"
             onkeydown="if(event.key==='Enter'){saveNoteEdit('${col.id}',${n.id},this.value);cancelInlineEdit('${eid}')}if(event.key==='Escape')cancelInlineEdit('${eid}')"/>
-          <button onclick="const inp=document.getElementById('${eid}').querySelector('.item-edit-row input');saveNoteEdit('${col.id}',${n.id},inp.value);cancelInlineEdit('${eid}')" style="background:${col.accent};color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer">Save</button>
-          <button onclick="cancelInlineEdit('${eid}')" style="background:#e2e8f0;color:#475569;border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer">Cancel</button>
+          <button onclick="const inp=document.getElementById('${eid}').querySelector('.item-edit-row input');saveNoteEdit('${col.id}',${n.id},inp.value);cancelInlineEdit('${eid}')" style="background:${col.accent};color:var(--c-white);border:none;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer">Save</button>
+          <button onclick="cancelInlineEdit('${eid}')" style="background:var(--c-slate-200);color:var(--c-slate-600);border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer">Cancel</button>
         </div>`;
       listEl.appendChild(noteEl);
     });
@@ -1002,10 +1040,10 @@ function patchRetroUI() {
   if(actBody) {
     const addRow   = document.getElementById("retro-action-add-row");
     const rowsHTML = actions.map(a=>`
-      <tr style="border-bottom:1px solid #1e293b">
+      <tr style="border-bottom:1px solid var(--c-slate-800)">
         <td style="padding:11px 14px;font-size:14px">${a.text}</td>
-        <td style="padding:11px 14px;font-size:13px;color:#60a5fa;font-weight:600">${a.owner||""}</td>
-        <td style="padding:11px 14px"><button onclick="removeAction(${a.id})" style="background:none;border:none;color:#475569;font-size:14px;cursor:pointer">✕</button></td>
+        <td style="padding:11px 14px;font-size:13px;color:var(--c-blue-400);font-weight:600">${a.owner||""}</td>
+        <td style="padding:11px 14px"><button onclick="removeAction(${a.id})" style="background:none;border:none;color:var(--c-slate-600);font-size:14px;cursor:pointer">✕</button></td>
       </tr>`).join("");
     Array.from(actBody.querySelectorAll("tr")).forEach(tr=>{ if(tr!==addRow) tr.remove(); });
     if(addRow) { addRow.insertAdjacentHTML("beforebegin", rowsHTML); }
@@ -1025,11 +1063,11 @@ function patchNextUI() {
     const isMy  = myNextVotes[opt.id];
     const pct   = totalNV>0 ? Math.round((count/totalNV)*100) : 0;
     const maxed = myCount>=3 && !isMy;
-    btn.style.background  = isMy ? "#1e40af" : "#1e293b";
-    btn.style.borderColor = isMy ? "#3b82f6" : "#334155";
+    btn.style.background  = isMy ? "var(--c-blue-800)" : "var(--c-slate-800)";
+    btn.style.borderColor = isMy ? "var(--c-blue)" : "var(--c-slate-700)";
     btn.style.opacity     = maxed ? "0.45" : "1";
     btn.style.cursor      = maxed ? "not-allowed" : "pointer";
-    btn.style.boxShadow   = isMy ? "0 0 12px #3b82f688" : "none";
+    btn.style.boxShadow   = isMy ? "0 0 12px var(--c-blue-88)" : "none";
     const barEl  = btn.querySelector(".nv-bar");
     const cntEl  = btn.querySelector(".nv-count");
     const chkEl  = btn.querySelector(".nv-check");
@@ -1048,17 +1086,17 @@ function patchNextUI() {
       topEl.style.display = "";
       topEl.querySelector(".nv-top-list").innerHTML = sorted.map((o,i)=>`
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-          <span style="font-size:14px;width:20px;color:${i===0?"#f59e0b":"#64748b"};font-weight:800">#${i+1}</span>
+          <span style="font-size:14px;width:20px;color:${i===0?"var(--c-accent)":"var(--c-slate-500)"};font-weight:800">#${i+1}</span>
           <span style="font-size:14px">${o.emoji}</span>
-          <span style="flex:1;font-size:13px;color:#e2e8f0">${o.label}</span>
-          <span style="font-size:13px;font-weight:700;color:#60a5fa">${nextVotes[o.id]}</span>
+          <span style="flex:1;font-size:13px;color:var(--c-slate-200)">${o.label}</span>
+          <span style="font-size:13px;font-weight:700;color:var(--c-blue-400)">${nextVotes[o.id]}</span>
         </div>`).join("");
     }
   }
   // Patch next notes list
   const listEl = document.getElementById("nextnotes-list");
   if(!listEl) return;
-  if(nextNotes.length===0) { listEl.innerHTML = `<div style="text-align:center;padding:24px 0;color:#475569;font-size:13px">Suggestions will appear here live ✨</div>`; return; }
+  if(nextNotes.length===0) { listEl.innerHTML = `<div style="text-align:center;padding:24px 0;color:var(--c-slate-600);font-size:13px">Suggestions will appear here live ✨</div>`; return; }
   nextNotes.forEach((n,i) => {
     const eid = "nextnote-"+n.id;
     const isTop = n.votes>0&&i===0;
@@ -1067,34 +1105,34 @@ function patchNextUI() {
     if(existing) {
       const voteCount = existing.querySelector(".vote-count");
       const upBtn     = existing.querySelector(".upvote-btn");
-      if(voteCount) { voteCount.textContent = n.votes; voteCount.style.color = n.votes>0?"#818cf8":"#64748b"; }
-      if(upBtn)     { upBtn.style.cursor = "pointer"; upBtn.style.opacity = "1"; upBtn.style.boxShadow = alreadyVoted?"0 0 0 2px #6366f1":"none"; upBtn.title = alreadyVoted?"Click to remove your vote":"Upvote"; }
+      if(voteCount) { voteCount.textContent = n.votes; voteCount.style.color = n.votes>0?"var(--c-indigo-400)":"var(--c-slate-500)"; }
+      if(upBtn)     { upBtn.style.cursor = "pointer"; upBtn.style.opacity = "1"; upBtn.style.boxShadow = alreadyVoted?"0 0 0 2px var(--c-indigo)":"none"; upBtn.title = alreadyVoted?"Click to remove your vote":"Upvote"; }
       listEl.appendChild(existing);
       return;
     }
     const noteEl = document.createElement("div");
     noteEl.id = eid;
     noteEl.className = "note-card";
-    noteEl.style.cssText = `background:${isTop?"#6366f122":"#0f172a"};border:${isTop?2:1}px solid ${isTop?"#6366f1":"#4338ca44"};border-radius:8px;padding:9px 10px 9px 12px;font-size:13px;color:#e2e8f0;line-height:1.4;margin-bottom:8px`;
+    noteEl.style.cssText = `background:${isTop?"var(--c-indigo-22)":"var(--c-slate-900)"};border:${isTop?2:1}px solid ${isTop?"var(--c-indigo)":"var(--c-indigo-800-44)"};border-radius:8px;padding:9px 10px 9px 12px;font-size:13px;color:var(--c-slate-200);line-height:1.4;margin-bottom:8px`;
     noteEl.innerHTML = `
       <div style="display:flex;align-items:center;gap:8px">
         ${isTop?`<span style="font-size:12px;flex-shrink:0">🔥</span>`:""}
         <span class="item-text" style="flex:1">${n.text}</span>
         <div class="item-actions" style="display:flex;align-items:center;gap:4px;flex-shrink:0">
           ${n.creatorId===MY_ID?`
-          <button onclick="startInlineEdit('${eid}','${n.text.replace(/'/g,"\'")}',null)" title="Edit" style="background:none;border:none;cursor:pointer;font-size:12px;color:#64748b;padding:2px 4px">✏️</button>
-          <button onclick="deleteNextNote(${n.id})" title="Delete" style="background:none;border:none;cursor:pointer;font-size:12px;color:#64748b;padding:2px 4px">✕</button>`:""}
-          <button class="upvote-btn" onclick="upvoteNextNote(${n.id})" style="display:flex;flex-direction:column;align-items:center;gap:1px;background:${n.votes>0?"#6366f122":"rgba(255,255,255,.05)"};border:1.5px solid ${n.votes>0?"#6366f1":"#334155"};border-radius:7px;padding:4px 7px;min-width:34px;cursor:${alreadyVoted?"not-allowed":"pointer"};opacity:${alreadyVoted?0.45:1}">
-            <span style="font-size:11px;line-height:1;color:#94a3b8">▲</span>
-            <span class="vote-count" style="font-size:12px;font-weight:800;color:${n.votes>0?"#818cf8":"#64748b"};line-height:1;margin-top:1px">${n.votes}</span>
+          <button onclick="startInlineEdit('${eid}','${n.text.replace(/'/g,"\'")}',null)" title="Edit" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--c-slate-500);padding:2px 4px">✏️</button>
+          <button onclick="deleteNextNote(${n.id})" title="Delete" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--c-slate-500);padding:2px 4px">✕</button>`:""}
+          <button class="upvote-btn" onclick="upvoteNextNote(${n.id})" style="display:flex;flex-direction:column;align-items:center;gap:1px;background:${n.votes>0?"var(--c-indigo-22)":"rgba(255,255,255,.05)"};border:1.5px solid ${n.votes>0?"var(--c-indigo)":"var(--c-slate-700)"};border-radius:7px;padding:4px 7px;min-width:34px;cursor:${alreadyVoted?"not-allowed":"pointer"};opacity:${alreadyVoted?0.45:1}">
+            <span style="font-size:11px;line-height:1;color:var(--c-slate-400)">▲</span>
+            <span class="vote-count" style="font-size:12px;font-weight:800;color:${n.votes>0?"var(--c-indigo-400)":"var(--c-slate-500)"};line-height:1;margin-top:1px">${n.votes}</span>
           </button>
         </div>
       </div>
       <div class="item-edit-row" style="display:none;gap:6px;margin-top:6px">
-        <input style="flex:1;background:#1e293b;border:1.5px solid #6366f1;border-radius:6px;padding:5px 8px;font-size:13px;color:#e2e8f0;outline:none"
+        <input style="flex:1;background:var(--c-slate-800);border:1.5px solid var(--c-indigo);border-radius:6px;padding:5px 8px;font-size:13px;color:var(--c-slate-200);outline:none"
           onkeydown="if(event.key==='Enter'){saveNextNoteEdit(${n.id},this.value);cancelInlineEdit('${eid}')}if(event.key==='Escape')cancelInlineEdit('${eid}')"/>
-        <button onclick="const inp=document.getElementById('${eid}').querySelector('.item-edit-row input');saveNextNoteEdit(${n.id},inp.value);cancelInlineEdit('${eid}')" style="background:#6366f1;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer">Save</button>
-        <button onclick="cancelInlineEdit('${eid}')" style="background:#334155;color:#94a3b8;border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer">Cancel</button>
+        <button onclick="const inp=document.getElementById('${eid}').querySelector('.item-edit-row input');saveNextNoteEdit(${n.id},inp.value);cancelInlineEdit('${eid}')" style="background:var(--c-indigo);color:var(--c-white);border:none;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer">Save</button>
+        <button onclick="cancelInlineEdit('${eid}')" style="background:var(--c-slate-700);color:var(--c-slate-400);border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer">Cancel</button>
       </div>`;
     listEl.appendChild(noteEl);
   });
@@ -1147,12 +1185,12 @@ function sectionHead(title, sub) {
   const wrap = document.createElement("div");
   wrap.style.marginBottom = "22px";
   const t = document.createElement("h2");
-  t.style.cssText = "font-size:21px;font-weight:900;margin:0;letter-spacing:-.03em;color:#f1f5f9";
+  t.style.cssText = "font-size:21px;font-weight:900;margin:0;letter-spacing:-.03em;color:var(--c-slate-100)";
   t.textContent = title;
   wrap.appendChild(t);
   if(sub) {
     const s = document.createElement("p");
-    s.style.cssText = "margin:5px 0 0;font-size:13px;color:#64748b";
+    s.style.cssText = "margin:5px 0 0;font-size:13px;color:var(--c-slate-500)";
     s.textContent = sub;
     wrap.appendChild(s);
   }
@@ -1160,7 +1198,7 @@ function sectionHead(title, sub) {
 }
 function tip(text) {
   const d = document.createElement("div");
-  d.style.cssText = "margin-top:16px;background:#1e293b;border:1px solid #fde68a;border-radius:10px;padding:12px 16px;font-size:13px;color:#fde68a;display:flex;gap:10px;align-items:flex-start";
+  d.style.cssText = "margin-top:16px;background:var(--c-slate-800);border:1px solid var(--c-amber-200);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--c-amber-200);display:flex;gap:10px;align-items:flex-start";
   d.innerHTML = `<span>💡</span><div><strong>Facilitator tip: </strong>${text}</div>`;
   return d;
 }
@@ -1171,8 +1209,8 @@ function renderCheckin(panel) {
 
   if(prevActions.length === 0) {
     const empty = document.createElement("div");
-    empty.style.cssText = "background:#1e293b;border:1px dashed #334155;border-radius:12px;padding:40px 24px;text-align:center;color:#475569";
-    empty.innerHTML = `<div style="font-size:32px;margin-bottom:10px">📋</div><div style="font-size:14px;margin-bottom:8px">No previous actions loaded yet.</div><div style="font-size:12px">Open <strong style="color:#f59e0b">⚙️ Settings</strong> (top right) and import last sprint's data.</div>`;
+    empty.style.cssText = "background:var(--c-slate-800);border:1px dashed var(--c-slate-700);border-radius:12px;padding:40px 24px;text-align:center;color:var(--c-slate-600)";
+    empty.innerHTML = `<div style="font-size:32px;margin-bottom:10px">📋</div><div style="font-size:14px;margin-bottom:8px">No previous actions loaded yet.</div><div style="font-size:12px">Open <strong style="color:var(--c-accent)">⚙️ Settings</strong> (top right) and import last sprint's data.</div>`;
     panel.appendChild(empty);
     return;
   }
@@ -1184,43 +1222,43 @@ function renderCheckin(panel) {
 
   // progress bar
   const prog = document.createElement("div");
-  prog.style.cssText = "background:#1e293b;border-radius:10px;padding:14px 18px;margin-bottom:16px;border:1px solid #334155;display:flex;align-items:center;gap:16px";
+  prog.style.cssText = "background:var(--c-slate-800);border-radius:10px;padding:14px 18px;margin-bottom:16px;border:1px solid var(--c-slate-700);display:flex;align-items:center;gap:16px";
   prog.innerHTML = `
     <div style="flex:1">
       <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-        <span style="font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em">Completion</span>
-        <span style="font-size:13px;font-weight:800;color:${isAll?"#4ade80":"#f59e0b"}">${done} / ${total} done</span>
+        <span style="font-size:12px;font-weight:700;color:var(--c-slate-400);text-transform:uppercase;letter-spacing:.08em">Completion</span>
+        <span style="font-size:13px;font-weight:800;color:${isAll?"var(--c-green)":"var(--c-accent)"}">${done} / ${total} done</span>
       </div>
-      <div style="height:8px;background:#0f172a;border-radius:4px;overflow:hidden">
-        <div style="height:100%;width:${pct}%;background:${isAll?"#4ade80":"#f59e0b"};border-radius:4px;transition:width .4s ease"></div>
+      <div style="height:8px;background:var(--c-slate-900);border-radius:4px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${isAll?"var(--c-green)":"var(--c-accent)"};border-radius:4px;transition:width .4s ease"></div>
       </div>
     </div>
     <div style="display:flex;gap:10px">
-      <span style="font-size:13px;color:#4ade80;font-weight:700">✓ ${done} done</span>
-      <span style="font-size:13px;color:#f87171;font-weight:700">✗ ${total-done} missed</span>
+      <span style="font-size:13px;color:var(--c-green);font-weight:700">✓ ${done} done</span>
+      <span style="font-size:13px;color:var(--c-red);font-weight:700">✗ ${total-done} missed</span>
     </div>`;
   panel.appendChild(prog);
 
   // table
   const wrap = document.createElement("div");
-  wrap.style.cssText = "background:#1e293b;border-radius:12px;overflow:hidden;border:1px solid #334155";
+  wrap.style.cssText = "background:var(--c-slate-800);border-radius:12px;overflow:hidden;border:1px solid var(--c-slate-700)";
   let rows = "";
   prevActions.forEach((a,i)=>{
-    const bg = a.done ? "#14532d18" : "#7f1d1d18";
+    const bg = a.done ? "var(--c-green-900-18)" : "var(--c-red-900-18)";
     rows += `<tr style="background:${bg}">
       <td style="padding:13px 16px;font-size:14px">
-        ${a.carriedOver?`<span style="font-size:10px;font-weight:700;color:#f59e0b;background:#f59e0b22;border:1px solid #f59e0b55;border-radius:4px;padding:1px 6px;margin-right:6px;letter-spacing:.04em">CARRIED OVER</span>`:""}${a.text||""}
+        ${a.carriedOver?`<span style="font-size:10px;font-weight:700;color:var(--c-accent);background:var(--c-accent-22);border:1px solid var(--c-accent-55);border-radius:4px;padding:1px 6px;margin-right:6px;letter-spacing:.04em">CARRIED OVER</span>`:""}${a.text||""}
       </td>
-      <td style="padding:13px 16px;font-size:13px;color:#94a3b8">${a.owner||""}</td>
+      <td style="padding:13px 16px;font-size:13px;color:var(--c-slate-400)">${a.owner||""}</td>
       <td style="padding:13px 16px;text-align:center">
-        <div style="display:inline-flex;border-radius:8px;overflow:hidden;border:1px solid #334155">
-          <button onclick="setPrevActionStatus(${i},true)" style="padding:5px 14px;font-size:12px;font-weight:700;border:none;background:${a.done?"#14532d":"#1e293b"};color:${a.done?"#4ade80":"#475569"};transition:all .18s">✓ Done</button>
-          <button onclick="setPrevActionStatus(${i},false)" style="padding:5px 14px;font-size:12px;font-weight:700;border:none;border-left:1px solid #334155;background:${a.done===false?"#7f1d1d":"#1e293b"};color:${a.done===false?"#f87171":"#475569"};transition:all .18s">✗ Missed</button>
+        <div style="display:inline-flex;border-radius:8px;overflow:hidden;border:1px solid var(--c-slate-700)">
+          <button onclick="setPrevActionStatus(${i},true)" style="padding:5px 14px;font-size:12px;font-weight:700;border:none;background:${a.done?"var(--c-green-900)":"var(--c-slate-800)"};color:${a.done?"var(--c-green)":"var(--c-slate-600)"};transition:all .18s">✓ Done</button>
+          <button onclick="setPrevActionStatus(${i},false)" style="padding:5px 14px;font-size:12px;font-weight:700;border:none;border-left:1px solid var(--c-slate-700);background:${a.done===false?"var(--c-red-900)":"var(--c-slate-800)"};color:${a.done===false?"var(--c-red)":"var(--c-slate-600)"};transition:all .18s">✗ Missed</button>
         </div>
       </td>
     </tr>`;
   });
-  wrap.innerHTML = `<table><thead><tr style="background:#0f172a;border-bottom:1px solid #334155"><th>Action</th><th>Owner</th><th class="center">Status</th></tr></thead><tbody>${rows}</tbody></table>`;
+  wrap.innerHTML = `<table><thead><tr style="background:var(--c-slate-900);border-bottom:1px solid var(--c-slate-700)"><th>Action</th><th>Owner</th><th class="center">Status</th></tr></thead><tbody>${rows}</tbody></table>`;
   panel.appendChild(wrap);
   panel.appendChild(tip("Missed actions aren't a court martial — understand what got in the way, then move on."));
 }
@@ -1238,9 +1276,9 @@ function renderMood(panel) {
     const isMy  = myMoodVote===m.id;
     const btn   = document.createElement("button");
     btn.id = "mbtn-"+m.id;
-    btn.style.cssText = `background:${isMy?m.col+"33":count>0?m.col+"11":"#1e293b"};border:2px solid ${isMy?m.col:count>0?m.col+"55":"#334155"};border-radius:14px;padding:14px 8px 10px;transition:all .2s;text-align:center;position:relative;overflow:hidden;box-shadow:${isMy?`0 0 12px ${m.col}66`:"none"};transform:${isMy?"scale(1.05)":"scale(1)"}`;
+    btn.style.cssText = `background:${isMy?m.col+"33":count>0?m.col+"11":"var(--c-slate-800)"};border:2px solid ${isMy?m.col:count>0?m.col+"55":"var(--c-slate-700)"};border-radius:14px;padding:14px 8px 10px;transition:all .2s;text-align:center;position:relative;overflow:hidden;box-shadow:${isMy?`0 0 12px ${m.col}66`:"none"};transform:${isMy?"scale(1.05)":"scale(1)"}`;
     // Show image; fall back to emoji span on load error
-    const imgOrEmoji = `<div style="width:52px;height:52px;margin:0 auto 6px;position:relative;border-radius:50%;overflow:hidden;border:2px solid ${isMy?m.col:"#334155"};background:#0f172a;display:flex;align-items:center;justify-content:center">
+    const imgOrEmoji = `<div style="width:52px;height:52px;margin:0 auto 6px;position:relative;border-radius:50%;overflow:hidden;border:2px solid ${isMy?m.col:"var(--c-slate-700)"};background:var(--c-slate-900);display:flex;align-items:center;justify-content:center">
       <img src="${m.img}" alt="${m.label}"
         style="width:100%;height:100%;object-fit:cover;display:block"
         onerror="this.style.display='none';this.parentNode.querySelector('.mood-fallback').style.display='flex'">
@@ -1249,7 +1287,7 @@ function renderMood(panel) {
     btn.innerHTML = `
       <div class="mood-fill" style="position:absolute;bottom:0;left:0;right:0;height:${pct}%;background:${m.col}22;transition:height .4s ease"></div>
       ${imgOrEmoji}
-      <div style="font-size:11px;font-weight:${isMy?800:700};color:${isMy?m.col:count>0?m.col+"cc":"#94a3b8"};line-height:1.3">${m.label}</div>
+      <div style="font-size:11px;font-weight:${isMy?800:700};color:${isMy?m.col:count>0?m.col+"cc":"var(--c-slate-400)"};line-height:1.3">${m.label}</div>
       <div class="mood-count" style="font-size:16px;font-weight:900;color:${m.col};margin-top:4px">${count>0?count:""}</div>
       ${isMy?`<div style="font-size:9px;color:${m.col};margin-top:3px;letter-spacing:.05em;text-transform:uppercase;font-weight:800">Your vote</div>`:""}`;
     btn.onclick = ()=>castMoodVote(m.id);
@@ -1259,7 +1297,7 @@ function renderMood(panel) {
 
   if(myMoodVote) {
     const hint = document.createElement("div");
-    hint.style.cssText = "font-size:12px;color:#475569;text-align:center;margin-bottom:16px";
+    hint.style.cssText = "font-size:12px;color:var(--c-slate-600);text-align:center;margin-bottom:16px";
     hint.textContent = "Tap a different mood to change your vote";
     panel.appendChild(hint);
   }
@@ -1267,7 +1305,7 @@ function renderMood(panel) {
   // Previous sprint mood reference — always shown, placeholder if no import yet
   {
     const prevRef = document.createElement("div");
-    prevRef.style.cssText = "background:#1e293b;border-radius:10px;padding:14px 18px;border:1px solid #334155;margin-bottom:16px";
+    prevRef.style.cssText = "background:var(--c-slate-800);border-radius:10px;padding:14px 18px;border:1px solid var(--c-slate-700);margin-bottom:16px";
     const hasPrev = importedMood && Object.values(importedMood).some(m=>m.count>0);
     if(hasPrev) {
       const prevTotal = Object.values(importedMood).reduce((s,m)=>s+(m.count||0),0);
@@ -1280,24 +1318,24 @@ function renderMood(panel) {
         return `<span style="display:flex;align-items:center;gap:4px;font-size:11px;color:${m.col}">${moodImg(m,14)} ${m.label} · ${importedMood[m.id].count} vote${importedMood[m.id].count!==1?"s":""} (${pct}%)</span>`;
       }).join("");
       prevRef.innerHTML = `
-        <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Last sprint mood — ${prevTotal} votes</div>
+        <div style="font-size:11px;font-weight:700;color:var(--c-slate-500);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Last sprint mood — ${prevTotal} votes</div>
         <div style="display:flex;height:32px;border-radius:6px;overflow:hidden;gap:2px;margin-bottom:10px;align-items:center">${prevBars}</div>
         <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">${prevLegend}</div>`;
     } else {
       prevRef.innerHTML = `
-        <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">Last sprint mood</div>
-        <div style="font-size:12px;color:#475569;font-style:italic">No previous sprint imported yet — open ⚙️ Settings and import last sprint's data to see a comparison.</div>`;
+        <div style="font-size:11px;font-weight:700;color:var(--c-slate-500);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">Last sprint mood</div>
+        <div style="font-size:12px;color:var(--c-slate-600);font-style:italic">No previous sprint imported yet — open ⚙️ Settings and import last sprint's data to see a comparison.</div>`;
     }
     panel.appendChild(prevRef);
   }
 
   const bar = document.createElement("div");
   bar.id = "mood-live-bar";
-  bar.style.cssText = "background:#1e293b;border-radius:10px;padding:16px 20px;border:1px solid #334155"+(totalMood===0?";display:none":"");
+  bar.style.cssText = "background:var(--c-slate-800);border-radius:10px;padding:16px 20px;border:1px solid var(--c-slate-700)"+(totalMood===0?";display:none":"");
   if(true) {
     const moods = MOODS.filter(m=>moodVotes[m.id]);
     bar.innerHTML = `
-      <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">Live mood — ${totalMood} votes</div>
+      <div style="font-size:11px;font-weight:700;color:var(--c-slate-500);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">Live mood — ${totalMood} votes</div>
       <div style="display:flex;height:42px;border-radius:8px;overflow:hidden;gap:2px;align-items:center">
         ${moods.map(m=>{const p=(moodVotes[m.id]/totalMood)*100;return `<div class="bar-fill" title="${m.label}:${moodVotes[m.id]}" style="background:${m.col};width:${p}%;display:flex;align-items:center;justify-content:center;min-width:2px;height:100%;transition:width .4s ease;overflow:hidden">${p>8?moodImg(m,32):""}</div>`;}).join("")}
       </div>
@@ -1321,26 +1359,26 @@ function patchHealthUI() {
     // ── Card border/background ──
     const card = document.getElementById("hcard-"+cat.id);
     if(card) {
-      card.style.background   = dom ? STATUS[dom].fill+"18" : "#1e293b";
-      card.style.borderColor  = dom ? STATUS[dom].border+"88" : "#334155";
+      card.style.background   = dom ? STATUS[dom].fill+"18" : "var(--c-slate-800)";
+      card.style.borderColor  = dom ? STATUS[dom].border+"88" : "var(--c-slate-700)";
     }
 
     // ── Heatmap dot ──
     const dot = document.getElementById("hdot-"+cat.id);
     if(dot) {
-      dot.style.background  = dom ? STATUS[dom].fill  : "#334155";
-      dot.style.borderColor = dom ? STATUS[dom].border : "#475569";
+      dot.style.background  = dom ? STATUS[dom].fill  : "var(--c-slate-700)";
+      dot.style.borderColor = dom ? STATUS[dom].border : "var(--c-slate-600)";
       dot.title = cat.label+" · "+total+" votes";
       // Update emoji and count inside dot
       dot.innerHTML = (dom ? STATUS[dom].emoji : "")
-        + (total>0 ? `<div style="position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);font-size:9px;color:#64748b;font-weight:700">${total}</div>` : "");
+        + (total>0 ? `<div style="position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--c-slate-500);font-weight:700">${total}</div>` : "");
     }
 
     // ── Vote count + trend in meta row ──
     const meta = document.getElementById("hmeta-"+cat.id);
     if(meta) {
       meta.innerHTML = (trend ? `<span style="font-size:15px;font-weight:900;color:${trend.color}">${trend.icon}</span>` : "")
-        + (total>0 ? `<span style="font-size:11px;color:#64748b;font-family:monospace">${total} vote${total!==1?"s":""}</span>` : "");
+        + (total>0 ? `<span style="font-size:11px;color:var(--c-slate-500);font-family:monospace">${total} vote${total!==1?"s":""}</span>` : "");
     }
 
     // ── Distribution bar ──
@@ -1352,7 +1390,7 @@ function patchHealthUI() {
             ${["red","amber","green"].map(s=>{ const p=(v[s]/total)*100; return p>0?`<div style="width:${p}%;background:${STATUS[s].fill};border:1px solid ${STATUS[s].border};border-radius:3px;transition:width .4s ease" title="${STATUS[s].label}:${v[s]}"></div>`:"";}).join("")}
           </div>
           <div style="display:flex;gap:8px;margin-top:5px">
-            ${["red","amber","green"].filter(s=>v[s]>0).map(s=>`<span style="font-size:11px;color:${STATUS[s].border};font-weight:700">${STATUS[s].emoji} ${v[s]} <span style="color:#475569;font-weight:400">(${Math.round((v[s]/total)*100)}%)</span></span>`).join("")}
+            ${["red","amber","green"].filter(s=>v[s]>0).map(s=>`<span style="font-size:11px;color:${STATUS[s].border};font-weight:700">${STATUS[s].emoji} ${v[s]} <span style="color:var(--c-slate-600);font-weight:400">(${Math.round((v[s]/total)*100)}%)</span></span>`).join("")}
           </div>`;
         barWrap.style.marginBottom = "10px";
       } else {
@@ -1366,8 +1404,8 @@ function patchHealthUI() {
       const b = document.getElementById("hbtn-"+cat.id+"-"+st);
       if(!b) return;
       const isMy = myV === st;
-      b.style.background  = isMy ? STATUS[st].fill : "#0f172a";
-      b.style.borderColor = isMy ? STATUS[st].border : "#334155";
+      b.style.background  = isMy ? STATUS[st].fill : "var(--c-slate-900)";
+      b.style.borderColor = isMy ? STATUS[st].border : "var(--c-slate-700)";
       b.style.transform   = isMy ? "scale(1.1)" : "scale(1)";
       b.style.boxShadow    = isMy ? `0 0 8px ${STATUS[st].border}88` : "none";
     });
@@ -1386,7 +1424,7 @@ function patchHealthUI() {
   if(prog) {
     const myCount = Object.keys(myHealthVotes).length;
     prog.innerHTML = myCount+" / "+HEALTH_CATS.length+" voted by you"
-      +(myCount===HEALTH_CATS.length?' <span style="color:#4ade80;font-weight:700">✓ All done!</span>':"");
+      +(myCount===HEALTH_CATS.length?' <span style="color:var(--c-green);font-weight:700">✓ All done!</span>':"");
   }
 }
 
@@ -1400,25 +1438,25 @@ function renderHealth(panel) {
   leg.style.cssText = "display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px";
   leg.innerHTML = `
     <div style="display:flex;gap:16px;flex-wrap:wrap">
-      ${Object.entries(STATUS).map(([k,v])=>`<div style="display:flex;align-items:center;gap:6px;font-size:12px"><div style="width:10px;height:10px;border-radius:2px;background:${v.fill};border:1.5px solid ${v.border}"></div><span style="color:#94a3b8">${v.label}</span></div>`).join("")}
+      ${Object.entries(STATUS).map(([k,v])=>`<div style="display:flex;align-items:center;gap:6px;font-size:12px"><div style="width:10px;height:10px;border-radius:2px;background:${v.fill};border:1.5px solid ${v.border}"></div><span style="color:var(--c-slate-400)">${v.label}</span></div>`).join("")}
     </div>
-    <div id="health-progress" style="font-size:12px;color:#64748b">${myCount} / ${HEALTH_CATS.length} voted by you${myCount===HEALTH_CATS.length?' <span style="color:#4ade80;font-weight:700">✓ All done!</span>':""}</div>`;
+    <div id="health-progress" style="font-size:12px;color:var(--c-slate-500)">${myCount} / ${HEALTH_CATS.length} voted by you${myCount===HEALTH_CATS.length?' <span style="color:var(--c-green);font-weight:700">✓ All done!</span>':""}</div>`;
   panel.appendChild(leg);
 
   // Heatmap strip
   const hasVotes = Object.keys(healthVotes).length > 0;
   if(hasVotes) {
     const strip = document.createElement("div");
-    strip.style.cssText = "background:#1e293b;padding:12px 16px;border-radius:10px;margin-bottom:20px;border:1px solid #334155";
-    strip.innerHTML = `<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Damage report — dominant reading per system</div>
+    strip.style.cssText = "background:var(--c-slate-800);padding:12px 16px;border-radius:10px;margin-bottom:20px;border:1px solid var(--c-slate-700)";
+    strip.innerHTML = `<div style="font-size:11px;font-weight:700;color:var(--c-slate-500);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Damage report — dominant reading per system</div>
       <div style="display:flex;gap:4px;flex-wrap:wrap">
         ${HEALTH_CATS.map(cat=>{
           const dom = dominant(cat.id);
           const tot = (healthVotes[cat.id]||{red:0,amber:0,green:0});
           const t   = tot.red+tot.amber+tot.green;
-          return `<div id="hdot-${cat.id}" title="${cat.label} · ${t} votes" style="width:32px;height:32px;border-radius:6px;background:${dom?STATUS[dom].fill:"#334155"};border:1.5px solid ${dom?STATUS[dom].border:"#475569"};display:flex;align-items:center;justify-content:center;font-size:14px;position:relative;transition:background .4s,border-color .4s">
+          return `<div id="hdot-${cat.id}" title="${cat.label} · ${t} votes" style="width:32px;height:32px;border-radius:6px;background:${dom?STATUS[dom].fill:"var(--c-slate-700)"};border:1.5px solid ${dom?STATUS[dom].border:"var(--c-slate-600)"};display:flex;align-items:center;justify-content:center;font-size:14px;position:relative;transition:background .4s,border-color .4s">
             ${dom?STATUS[dom].emoji:""}
-            ${t>0?`<div style="position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);font-size:9px;color:#64748b;font-weight:700">${t}</div>`:""}
+            ${t>0?`<div style="position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--c-slate-500);font-weight:700">${t}</div>`:""}
           </div>`;
         }).join("")}
       </div>`;
@@ -1441,7 +1479,7 @@ function renderHealth(panel) {
 
     const card = document.createElement("div");
     card.id = "hcard-"+cat.id;
-    card.style.cssText = `background:${dom?STATUS[dom].fill+"18":"#1e293b"};border:2px solid ${dom?STATUS[dom].border+"88":"#334155"};border-radius:12px;padding:12px 14px;transition:background .4s,border-color .4s`;
+    card.style.cssText = `background:${dom?STATUS[dom].fill+"18":"var(--c-slate-800)"};border:2px solid ${dom?STATUS[dom].border+"88":"var(--c-slate-700)"};border-radius:12px;padding:12px 14px;transition:background .4s,border-color .4s`;
 
     const distBar = total>0 ? `
       <div id="hbar-${cat.id}" style="margin-bottom:10px">
@@ -1449,24 +1487,24 @@ function renderHealth(panel) {
           ${["red","amber","green"].map(s=>{ const p=(v[s]/total)*100; return p>0?`<div style="width:${p}%;background:${STATUS[s].fill};border:1px solid ${STATUS[s].border};border-radius:3px;transition:width .4s ease" title="${STATUS[s].label}:${v[s]}"></div>`:"";}).join("")}
         </div>
         <div style="display:flex;gap:8px;margin-top:5px">
-          ${["red","amber","green"].filter(s=>v[s]>0).map(s=>`<span style="font-size:11px;color:${STATUS[s].border};font-weight:700">${STATUS[s].emoji} ${v[s]} <span style="color:#475569;font-weight:400">(${Math.round((v[s]/total)*100)}%)</span></span>`).join("")}
+          ${["red","amber","green"].filter(s=>v[s]>0).map(s=>`<span style="font-size:11px;color:${STATUS[s].border};font-weight:700">${STATUS[s].emoji} ${v[s]} <span style="color:var(--c-slate-600);font-weight:400">(${Math.round((v[s]/total)*100)}%)</span></span>`).join("")}
         </div>
       </div>` : `<div id="hbar-${cat.id}"></div>`;
 
     const btns = ["red","amber","green"].map(st=>{
       const isMy = myV===st;
-      return `<button id="hbtn-${cat.id}-${st}" onclick="castHealthVote('${cat.id}','${st}')" style="flex:1;padding:7px 4px;background:${isMy?STATUS[st].fill:"#0f172a"};border:2px solid ${isMy?STATUS[st].border:"#334155"};border-radius:8px;font-size:16px;transition:all .15s;transform:${isMy?"scale(1.1)":"scale(1)"};box-shadow:${isMy?`0 0 8px ${STATUS[st].border}88`:"none"}" title="${STATUS[st].label}">${STATUS[st].emoji}</button>`;
+      return `<button id="hbtn-${cat.id}-${st}" onclick="castHealthVote('${cat.id}','${st}')" style="flex:1;padding:7px 4px;background:${isMy?STATUS[st].fill:"var(--c-slate-900)"};border:2px solid ${isMy?STATUS[st].border:"var(--c-slate-700)"};border-radius:8px;font-size:16px;transition:all .15s;transform:${isMy?"scale(1.1)":"scale(1)"};box-shadow:${isMy?`0 0 8px ${STATUS[st].border}88`:"none"}" title="${STATUS[st].label}">${STATUS[st].emoji}</button>`;
     }).join("");
 
     card.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
-        <span style="font-size:13px;font-weight:700;color:#e2e8f0;line-height:1.3;flex:1">${cat.label}</span>
+        <span style="font-size:13px;font-weight:700;color:var(--c-slate-200);line-height:1.3;flex:1">${cat.label}</span>
         <div id="hmeta-${cat.id}" style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px">
           ${trend?`<span style="font-size:15px;font-weight:900;color:${trend.color}">${trend.icon}</span>`:""}
-          ${total>0?`<span style="font-size:11px;color:#64748b;font-family:monospace">${total} vote${total!==1?"s":""}</span>`:""}
+          ${total>0?`<span style="font-size:11px;color:var(--c-slate-500);font-family:monospace">${total} vote${total!==1?"s":""}</span>`:""}
         </div>
       </div>
-      <div style="font-size:11px;color:#64748b;margin-bottom:${prevVotes&&prevTotal>0?4:10}px;display:flex;align-items:center;gap:4px">
+      <div style="font-size:11px;color:var(--c-slate-500);margin-bottom:${prevVotes&&prevTotal>0?4:10}px;display:flex;align-items:center;gap:4px">
         Last sprint:
         <div style="width:8px;height:8px;border-radius:50%;background:${STATUS[prevS].fill};border:1px solid ${STATUS[prevS].border};margin-left:4px"></div>
         <span style="color:${STATUS[prevS].border}">${STATUS[prevS].label}</span>
@@ -1481,7 +1519,7 @@ function renderHealth(panel) {
       </div>`:""}
       ${distBar}
       <div style="display:flex;gap:6px">${btns}</div>
-      <div id="hvote-${cat.id}" style="font-size:11px;text-align:center;margin-top:6px;color:#475569">${myV?`Your vote: <span style="color:${STATUS[myV].border};font-weight:700">${STATUS[myV].label}</span>`:""}</div>`;
+      <div id="hvote-${cat.id}" style="font-size:11px;text-align:center;margin-top:6px;color:var(--c-slate-600)">${myV?`Your vote: <span style="color:${STATUS[myV].border};font-weight:700">${STATUS[myV].label}</span>`:""}</div>`;
     grid.appendChild(card);
   });
   panel.appendChild(grid);
@@ -1499,7 +1537,7 @@ function renderWins(panel) {
   panel.appendChild(sectionHead("🎉 Wins Wall","Name a win before the retro — they go up on the wall for everyone to see"));
   // Subtle Nic Cage watermark in the section header area
   const cageHint = document.createElement("div");
-  cageHint.style.cssText = "font-size:10px;color:#334155;text-align:right;margin-top:-16px;margin-bottom:18px;font-style:italic;letter-spacing:.03em";
+  cageHint.style.cssText = "font-size:10px;color:var(--c-slate-700);text-align:right;margin-top:-16px;margin-bottom:18px;font-style:italic;letter-spacing:.03em";
   cageHint.textContent = "🎬 “" + CAGE_LINES[Math.floor(Math.random()*CAGE_LINES.length)] + "”";
   panel.appendChild(cageHint);
 
@@ -1507,13 +1545,13 @@ function renderWins(panel) {
   inputRow.style.cssText = "display:flex;gap:10px;margin-bottom:24px";
   inputRow.innerHTML = `
     <input id="cel-input" placeholder="Name a win from this sprint..." onkeydown="if(event.key==='Enter')addCelebrate()"
-      style="flex:1;background:#1e293b;border:1.5px solid #334155;border-radius:10px;padding:11px 16px;font-size:14px;color:#f1f5f9;outline:none"/>
-    <button onclick="addCelebrate()" style="background:#f59e0b;color:#020617;border:none;border-radius:10px;padding:0 22px;font-size:14px;font-weight:800">Post 🎉</button>`;
+      style="flex:1;background:var(--c-slate-800);border:1.5px solid var(--c-slate-700);border-radius:10px;padding:11px 16px;font-size:14px;color:var(--c-slate-100);outline:none"/>
+    <button onclick="addCelebrate()" style="background:var(--c-accent);color:var(--c-slate-950);border:none;border-radius:10px;padding:0 22px;font-size:14px;font-weight:800">Post 🎉</button>`;
   panel.appendChild(inputRow);
 
   if(celebrate.length===0) {
     const empty = document.createElement("div");
-    empty.style.cssText = "text-align:center;padding:60px 0;color:#475569;font-size:15px";
+    empty.style.cssText = "text-align:center;padding:60px 0;color:var(--c-slate-600);font-size:15px";
     empty.innerHTML = `<div style="font-size:48px;margin-bottom:12px">🌟</div>No wins yet — be the first!`;
     panel.appendChild(empty);
     return;
@@ -1527,27 +1565,27 @@ function renderWins(panel) {
     const eid = "win-"+w.id;
     const note = document.createElement("div");
     note.id = eid;
-    note.style.cssText = `--rot:${rot}deg;transform:rotate(${rot}deg);background:#fde047;color:#1c1917;border-radius:4px;padding:14px 18px 20px;font-size:14px;font-weight:600;min-width:140px;max-width:200px;box-shadow:3px 4px 12px rgba(0,0,0,.35);line-height:1.4;position:relative`;
+    note.style.cssText = `--rot:${rot}deg;transform:rotate(${rot}deg);background:var(--c-yellow);color:var(--c-ink);border-radius:4px;padding:14px 18px 20px;font-size:14px;font-weight:600;min-width:140px;max-width:200px;box-shadow:3px 4px 12px rgba(0,0,0,.35);line-height:1.4;position:relative`;
     note.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
         <span style="font-size:20px">⭐</span>
         <div class="item-actions" style="display:flex;gap:2px">
           ${w.creatorId===MY_ID?`
           <button onclick="startInlineEdit('${eid}','${w.text.replace(/'/g,"\'")}',null)" title="Edit"
-            style="background:rgba(0,0,0,.08);border:none;border-radius:4px;padding:2px 5px;font-size:11px;cursor:pointer;color:#78350f">✏️</button>
+            style="background:rgba(0,0,0,.08);border:none;border-radius:4px;padding:2px 5px;font-size:11px;cursor:pointer;color:var(--c-brown)">✏️</button>
           <button onclick="deleteWin(${w.id})" title="Delete"
-            style="background:rgba(0,0,0,.08);border:none;border-radius:4px;padding:2px 5px;font-size:11px;cursor:pointer;color:#78350f">✕</button>`:""}
+            style="background:rgba(0,0,0,.08);border:none;border-radius:4px;padding:2px 5px;font-size:11px;cursor:pointer;color:var(--c-brown)">✕</button>`:""}
         </div>
       </div>
       <span class="item-text">${w.text}</span>
       <div class="item-edit-row" style="display:none;flex-direction:column;gap:6px;margin-top:8px">
-        <input style="width:100%;background:#fffbeb;border:1.5px solid #ca8a04;border-radius:6px;padding:5px 8px;font-size:13px;color:#1c1917;outline:none;box-sizing:border-box"
+        <input style="width:100%;background:var(--c-cream);border:1.5px solid var(--c-gold);border-radius:6px;padding:5px 8px;font-size:13px;color:var(--c-ink);outline:none;box-sizing:border-box"
           onkeydown="if(event.key==='Enter'){saveWinEdit(${w.id},this.value);cancelInlineEdit('${eid}')}if(event.key==='Escape')cancelInlineEdit('${eid}')"/>
         <div style="display:flex;gap:6px">
           <button onclick="const inp=document.getElementById('${eid}').querySelector('.item-edit-row input');saveWinEdit(${w.id},inp.value);cancelInlineEdit('${eid}')"
-            style="background:#ca8a04;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer">Save</button>
+            style="background:var(--c-gold);color:var(--c-white);border:none;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer">Save</button>
           <button onclick="cancelInlineEdit('${eid}')"
-            style="background:#e2e8f0;color:#475569;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer">Cancel</button>
+            style="background:var(--c-slate-200);color:var(--c-slate-600);border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer">Cancel</button>
         </div>
       </div>`;
     wall.appendChild(note);
@@ -1561,7 +1599,7 @@ function renderRetro(panel) {
   panel.appendChild(sectionHead("Sprint Retrospective","Notes appear live — spot the themes before grouping 💭"));
   // Subtle Barbie nod in a small tag line
   const barbieHint = document.createElement("div");
-  barbieHint.style.cssText = "font-size:10px;color:#f9a8d4;text-align:right;margin-top:-16px;margin-bottom:18px;font-style:italic;letter-spacing:.03em";
+  barbieHint.style.cssText = "font-size:10px;color:var(--c-pink);text-align:right;margin-top:-16px;margin-bottom:18px;font-style:italic;letter-spacing:.03em";
   barbieHint.textContent = "✨ “You can be anything” — even a high-performing team";
   panel.appendChild(barbieHint);
 
@@ -1571,49 +1609,49 @@ function renderRetro(panel) {
   NOTE_COLS.forEach(col=>{
     const colNotes = Array.isArray(notes[col.id]) ? notes[col.id] : [];
     const colDiv = document.createElement("div");
-    colDiv.style.cssText = `background:#1e293b;border:1.5px solid ${col.border};border-radius:14px;padding:16px;min-height:360px;display:flex;flex-direction:column`;
+    colDiv.style.cssText = `background:var(--c-slate-800);border:1.5px solid ${col.border};border-radius:14px;padding:16px;min-height:360px;display:flex;flex-direction:column`;
 
     let notesHTML = colNotes.length===0
-      ? `<div style="text-align:center;padding:24px 0;color:#475569;font-size:13px">Notes will appear here live ✨</div>`
+      ? `<div style="text-align:center;padding:24px 0;color:var(--c-slate-600);font-size:13px">Notes will appear here live ✨</div>`
       : colNotes.map((n,i)=>{
           const isTop = n.votes>0&&i===0;
           const eid = "note-"+col.id+"-"+n.id;
-          return `<div id="${eid}" style="background:${isTop?col.accent+"22":col.bg};border:${isTop?2:1}px solid ${isTop?col.accent:col.border};border-radius:8px;padding:9px 10px 9px 12px;font-size:13px;color:${isTop?"#f1f5f9":"#1c1917"};font-weight:${isTop?700:500};box-shadow:${isTop?`0 0 0 2px ${col.accent}44,0 2px 8px rgba(0,0,0,.18)`:"0 2px 6px rgba(0,0,0,.15)"};line-height:1.4;margin-bottom:8px">
+          return `<div id="${eid}" style="background:${isTop?col.accent+"22":col.bg};border:${isTop?2:1}px solid ${isTop?col.accent:col.border};border-radius:8px;padding:9px 10px 9px 12px;font-size:13px;color:${isTop?"var(--c-slate-100)":"var(--c-ink)"};font-weight:${isTop?700:500};box-shadow:${isTop?`0 0 0 2px ${col.accent}44,0 2px 8px rgba(0,0,0,.18)`:"0 2px 6px rgba(0,0,0,.15)"};line-height:1.4;margin-bottom:8px">
             <div style="display:flex;align-items:center;gap:8px">
               ${isTop?`<span style="font-size:12px;flex-shrink:0">🔥</span>`:""}
               <span class="item-text" style="flex:1">${n.text}</span>
               <div class="item-actions" style="display:flex;align-items:center;gap:4px;flex-shrink:0">
                 ${n.creatorId===MY_ID?`
-                <button onclick="startInlineEdit('${eid}','${n.text.replace(/'/g,"\'")}',null)" title="Edit" style="background:none;border:none;cursor:pointer;font-size:12px;color:#64748b;padding:2px 4px">✏️</button>
-                <button onclick="deleteNote('${col.id}',${n.id})" title="Delete" style="background:none;border:none;cursor:pointer;font-size:12px;color:#64748b;padding:2px 4px">✕</button>`:""}
+                <button onclick="startInlineEdit('${eid}','${n.text.replace(/'/g,"\'")}',null)" title="Edit" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--c-slate-500);padding:2px 4px">✏️</button>
+                <button onclick="deleteNote('${col.id}',${n.id})" title="Delete" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--c-slate-500);padding:2px 4px">✕</button>`:""}
                 <button class="upvote-btn" onclick="upvoteNote('${col.id}',${n.id})" title="${myNoteVotes[n.id]?'Click to remove your vote':'Upvote'}" style="display:flex;flex-direction:column;align-items:center;gap:1px;background:${n.votes>0?col.accent+"22":"rgba(255,255,255,.5)"};border:1.5px solid ${n.votes>0?col.accent:"rgba(0,0,0,.12)"};border-radius:7px;padding:4px 7px;min-width:34px;cursor:pointer;box-shadow:${myNoteVotes[n.id]?`0 0 0 2px ${col.accent}`:"none"}">
                   <span style="font-size:11px;line-height:1">▲</span>
-                  <span class="vote-count" style="font-size:12px;font-weight:800;color:${n.votes>0?col.accent:"#64748b"};line-height:1;margin-top:1px">${n.votes}</span>
+                  <span class="vote-count" style="font-size:12px;font-weight:800;color:${n.votes>0?col.accent:"var(--c-slate-500)"};line-height:1;margin-top:1px">${n.votes}</span>
                 </button>
               </div>
             </div>
             <div class="item-edit-row" style="display:none;gap:6px;margin-top:6px">
-              <input style="flex:1;background:${isTop?"#1e293b":"#fff"};border:1.5px solid ${col.accent};border-radius:6px;padding:5px 8px;font-size:13px;color:${isTop?"#f1f5f9":"#1c1917"};outline:none"
+              <input style="flex:1;background:${isTop?"var(--c-slate-800)":"var(--c-white)"};border:1.5px solid ${col.accent};border-radius:6px;padding:5px 8px;font-size:13px;color:${isTop?"var(--c-slate-100)":"var(--c-ink)"};outline:none"
                 onkeydown="if(event.key==='Enter'){saveNoteEdit('${col.id}',${n.id},this.value);cancelInlineEdit('${eid}')}if(event.key==='Escape')cancelInlineEdit('${eid}')"/>
               <button onclick="const inp=document.getElementById('${eid}').querySelector('.item-edit-row input');saveNoteEdit('${col.id}',${n.id},inp.value);cancelInlineEdit('${eid}')"
-                style="background:${col.accent};color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer">Save</button>
+                style="background:${col.accent};color:var(--c-white);border:none;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer">Save</button>
               <button onclick="cancelInlineEdit('${eid}')"
-                style="background:#e2e8f0;color:#475569;border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer">Cancel</button>
+                style="background:var(--c-slate-200);color:var(--c-slate-600);border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer">Cancel</button>
             </div>
           </div>`;
         }).join("");
 
     colDiv.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <span style="font-weight:800;font-size:14px;color:#f1f5f9">${col.label}</span>
+        <span style="font-weight:800;font-size:14px;color:var(--c-slate-100)">${col.label}</span>
         <span id="retro-badge-${col.id}" style="background:${col.border}44;color:${col.accent};border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700">${colNotes.length}</span>
       </div>
-      <div style="font-size:12px;font-style:italic;color:#64748b;border-left:3px solid ${col.accent};padding-left:10px;margin-bottom:14px;line-height:1.5">${getPrompt(col.id)}</div>
+      <div style="font-size:12px;font-style:italic;color:var(--c-slate-500);border-left:3px solid ${col.accent};padding-left:10px;margin-bottom:14px;line-height:1.5">${getPrompt(col.id)}</div>
       <div id="retro-list-${col.id}" style="flex:1">${notesHTML}</div>
       <div style="display:flex;gap:6px;margin-top:auto;padding-top:8px">
         <input id="note-input-${col.id}" placeholder="Add note — press Enter" onkeydown="if(event.key==='Enter')addNote('${col.id}')"
-          style="flex:1;background:#0f172a;border:1.5px solid ${col.border};border-radius:8px;padding:8px 11px;font-size:13px;color:#f1f5f9;outline:none"/>
-        <button onclick="addNote('${col.id}')" style="background:${col.accent};color:#fff;border:none;border-radius:8px;padding:0 13px;font-size:18px;font-weight:800">+</button>
+          style="flex:1;background:var(--c-slate-900);border:1.5px solid ${col.border};border-radius:8px;padding:8px 11px;font-size:13px;color:var(--c-slate-100);outline:none"/>
+        <button onclick="addNote('${col.id}')" style="background:${col.accent};color:var(--c-white);border:none;border-radius:8px;padding:0 13px;font-size:18px;font-weight:800">+</button>
       </div>`;
     grid.appendChild(colDiv);
   });
@@ -1623,21 +1661,21 @@ function renderRetro(panel) {
   const totalNotes = (notes.well||[]).length+(notes.bad||[]).length+(notes.ideas||[]).length;
   if(totalNotes>=3) {
     const summary = document.createElement("div");
-    summary.style.cssText = "background:#1e293b;border:1px solid #334155;border-radius:12px;padding:16px 20px;margin-bottom:24px";
+    summary.style.cssText = "background:var(--c-slate-800);border:1px solid var(--c-slate-700);border-radius:12px;padding:16px 20px;margin-bottom:24px";
     summary.innerHTML = `
-      <div style="font-size:13px;font-weight:700;color:#f59e0b;margin-bottom:12px;text-transform:uppercase;letter-spacing:.08em">📡 ${totalNotes} signals across 3 channels</div>
+      <div style="font-size:13px;font-weight:700;color:var(--c-accent);margin-bottom:12px;text-transform:uppercase;letter-spacing:.08em">📡 ${totalNotes} signals across 3 channels</div>
       <div style="display:flex;gap:8px">
         ${NOTE_COLS.map(col=>{
           const cn = Array.isArray(notes[col.id])?notes[col.id]:[];
           const tv = cn.reduce((s,n)=>s+n.votes,0);
           const top = [...cn].sort((a,b)=>b.votes-a.votes)[0];
-          return `<div style="flex:1;background:#0f172a;border-radius:8px;padding:12px 14px;border:1px solid ${col.border}33">
+          return `<div style="flex:1;background:var(--c-slate-900);border-radius:8px;padding:12px 14px;border:1px solid ${col.border}33">
             <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
               <div style="font-size:22px;font-weight:900;color:${col.accent}">${cn.length}</div>
               ${tv>0?`<div style="font-size:12px;color:${col.accent};font-weight:700">▲ ${tv}</div>`:""}
             </div>
-            <div style="font-size:11px;color:#64748b;margin-bottom:6px">${col.label.split(" ").slice(1).join(" ")}</div>
-            ${top&&top.votes>0?`<div style="font-size:11px;color:#94a3b8;font-style:italic;border-top:1px solid ${col.border}44;padding-top:6px;line-height:1.4">🔥 "${top.text.length>40?top.text.slice(0,40)+"…":top.text}"</div>`:""}
+            <div style="font-size:11px;color:var(--c-slate-500);margin-bottom:6px">${col.label.split(" ").slice(1).join(" ")}</div>
+            ${top&&top.votes>0?`<div style="font-size:11px;color:var(--c-slate-400);font-style:italic;border-top:1px solid ${col.border}44;padding-top:6px;line-height:1.4">🔥 "${top.text.length>40?top.text.slice(0,40)+"…":top.text}"</div>`:""}
             <div style="margin-top:8px;height:3px;border-radius:2px;background:${col.border};opacity:${0.4+(cn.length/(totalNotes+.001))*.5}"></div>
           </div>`;
         }).join("")}
@@ -1647,17 +1685,17 @@ function renderRetro(panel) {
 
   // Actions table
   const actWrap = document.createElement("div");
-  actWrap.innerHTML = `<div style="font-size:15px;font-weight:800;color:#f1f5f9;margin-bottom:12px">🎯 Actions — who's picking it up?</div>`;
+  actWrap.innerHTML = `<div style="font-size:15px;font-weight:800;color:var(--c-slate-100);margin-bottom:12px">🎯 Actions — who's picking it up?</div>`;
   const tWrap = document.createElement("div");
-  tWrap.style.cssText = "background:#1e293b;border:1.5px solid #3b82f6;border-radius:12px;overflow:hidden";
+  tWrap.style.cssText = "background:var(--c-slate-800);border:1.5px solid var(--c-blue);border-radius:12px;overflow:hidden";
   let actRows = actions.map(a=>`
-    <tr style="border-bottom:1px solid #1e293b">
+    <tr style="border-bottom:1px solid var(--c-slate-800)">
       <td style="padding:11px 14px;font-size:14px">${a.text}</td>
-      <td style="padding:11px 14px;font-size:13px;color:#60a5fa;font-weight:600">${a.owner||""}</td>
-      <td style="padding:11px 14px"><button onclick="removeAction(${a.id})" style="background:none;border:none;color:#475569;font-size:14px">✕</button></td>
+      <td style="padding:11px 14px;font-size:13px;color:var(--c-blue-400);font-weight:600">${a.owner||""}</td>
+      <td style="padding:11px 14px"><button onclick="removeAction(${a.id})" style="background:none;border:none;color:var(--c-slate-600);font-size:14px">✕</button></td>
     </tr>`).join("");
   tWrap.innerHTML = `<table>
-    <thead><tr style="background:#0f172a;border-bottom:1px solid #1e3a5f">
+    <thead><tr style="background:var(--c-slate-900);border-bottom:1px solid var(--c-blue-950)">
       <th>Action</th><th style="width:150px">Owner</th><th style="width:60px"></th>
     </tr></thead>
     <tbody id="retro-actions-body">
@@ -1665,7 +1703,7 @@ function renderRetro(panel) {
       <tr id="retro-action-add-row">
         <td style="padding:8px 14px"><input id="act-text" class="act-input" placeholder="Describe the action…"/></td>
         <td style="padding:8px 8px"><input id="act-owner" class="act-input" placeholder="Owner"/></td>
-        <td style="padding:8px 8px"><button onclick="addAction()" style="background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-weight:700;font-size:13px">Add</button></td>
+        <td style="padding:8px 8px"><button onclick="addAction()" style="background:var(--c-blue);color:var(--c-white);border:none;border-radius:8px;padding:7px 14px;font-weight:700;font-size:13px">Add</button></td>
       </tr>
     </tbody>
   </table>`;
@@ -1772,14 +1810,14 @@ function renderNext(panel) {
     const maxed = myCount>=3&&!isMy;
     const btn   = document.createElement("button");
     btn.id = "nvbtn-"+opt.id;
-    btn.style.cssText = `background:${isMy?"#1e40af":"#1e293b"};border:2px solid ${isMy?"#3b82f6":"#334155"};border-radius:12px;padding:14px 18px;cursor:${maxed?"not-allowed":"pointer"};opacity:${maxed?.45:1};box-shadow:${isMy?"0 0 12px #3b82f688":"none"};display:flex;align-items:center;gap:14px;transition:all .2s;text-align:left;width:100%`;
+    btn.style.cssText = `background:${isMy?"var(--c-blue-800)":"var(--c-slate-800)"};border:2px solid ${isMy?"var(--c-blue)":"var(--c-slate-700)"};border-radius:12px;padding:14px 18px;cursor:${maxed?"not-allowed":"pointer"};opacity:${maxed?.45:1};box-shadow:${isMy?"0 0 12px var(--c-blue-88)":"none"};display:flex;align-items:center;gap:14px;transition:all .2s;text-align:left;width:100%`;
     btn.innerHTML = `
       <span style="font-size:26px;flex-shrink:0">${opt.emoji}</span>
       <div style="flex:1;text-align:left">
-        <div style="font-size:14px;font-weight:${isMy?800:600};color:${isMy?"#93c5fd":"#e2e8f0"}">${opt.label}</div>
-        <div style="margin-top:6px"><div style="height:4px;border-radius:2px;background:#334155;overflow:hidden"><div class="nv-bar" style="height:100%;width:${pct}%;background:${isMy?"#3b82f6":"#64748b"};transition:width .4s ease"></div></div><div class="nv-count" style="font-size:11px;color:${isMy?"#93c5fd":"#64748b"};margin-top:3px">${count>0?count+" vote"+(count!==1?"s":"")+" · "+pct+"%":""}</div></div>
+        <div style="font-size:14px;font-weight:${isMy?800:600};color:${isMy?"var(--c-blue-300)":"var(--c-slate-200)"}">${opt.label}</div>
+        <div style="margin-top:6px"><div style="height:4px;border-radius:2px;background:var(--c-slate-700);overflow:hidden"><div class="nv-bar" style="height:100%;width:${pct}%;background:${isMy?"var(--c-blue)":"var(--c-slate-500)"};transition:width .4s ease"></div></div><div class="nv-count" style="font-size:11px;color:${isMy?"var(--c-blue-300)":"var(--c-slate-500)"};margin-top:3px">${count>0?count+" vote"+(count!==1?"s":"")+" · "+pct+"%":""}</div></div>
       </div>
-      <span class="nv-check" style="font-size:16px;color:#3b82f6;flex-shrink:0;display:${isMy?"":"none"}">✓</span>`;
+      <span class="nv-check" style="font-size:16px;color:var(--c-blue);flex-shrink:0;display:${isMy?"":"none"}">✓</span>`;
     btn.onclick = ()=>castNextVote(opt.id);
     grid.appendChild(btn);
   });
@@ -1787,70 +1825,70 @@ function renderNext(panel) {
 
   const hint = document.createElement("div");
   hint.id = "nv-hint";
-  hint.style.cssText = "font-size:12px;color:#475569;text-align:center;margin-bottom:20px";
+  hint.style.cssText = "font-size:12px;color:var(--c-slate-600);text-align:center;margin-bottom:20px";
   hint.textContent = `${myCount}/3 votes used — tap a selected option to remove it`;
   panel.appendChild(hint);
 
   if(Object.values(nextVotes).some(v=>v>0)) {
     const top = document.createElement("div");
     top.id = "nv-top";
-    top.style.cssText = "background:#1e293b;border:1px solid #334155;border-radius:10px;padding:14px 18px;margin-bottom:24px";
+    top.style.cssText = "background:var(--c-slate-800);border:1px solid var(--c-slate-700);border-radius:10px;padding:14px 18px;margin-bottom:24px";
     const sorted = [...NEXT_VOTES_DEF].filter(o=>nextVotes[o.id]>0).sort((a,b)=>(nextVotes[b.id]||0)-(nextVotes[a.id]||0)).slice(0,3);
-    top.innerHTML = `<div style="font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Top picks so far</div><div class="nv-top-list">
+    top.innerHTML = `<div style="font-size:12px;font-weight:700;color:var(--c-slate-500);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Top picks so far</div><div class="nv-top-list">
       ${sorted.map((o,i)=>`<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-        <span style="font-size:14px;width:20px;color:${i===0?"#f59e0b":"#64748b"};font-weight:800">#${i+1}</span>
+        <span style="font-size:14px;width:20px;color:${i===0?"var(--c-accent)":"var(--c-slate-500)"};font-weight:800">#${i+1}</span>
         <span style="font-size:14px">${o.emoji}</span>
-        <span style="flex:1;font-size:13px;color:#e2e8f0">${o.label}</span>
-        <span style="font-size:13px;font-weight:700;color:#60a5fa">${nextVotes[o.id]}</span>
+        <span style="flex:1;font-size:13px;color:var(--c-slate-200)">${o.label}</span>
+        <span style="font-size:13px;font-weight:700;color:var(--c-blue-400)">${nextVotes[o.id]}</span>
       </div>`).join("")}</div>`;
     panel.appendChild(top);
   }
 
   // ── Retro format improvement notes ──
   const notesWrap = document.createElement("div");
-  notesWrap.style.cssText = "background:#1e293b;border:1.5px solid #6366f1;border-radius:14px;padding:16px;min-height:200px;display:flex;flex-direction:column";
+  notesWrap.style.cssText = "background:var(--c-slate-800);border:1.5px solid var(--c-indigo);border-radius:14px;padding:16px;min-height:200px;display:flex;flex-direction:column";
 
   const notesHTML = nextNotes.length === 0
-    ? `<div style="text-align:center;padding:24px 0;color:#475569;font-size:13px">Suggestions will appear here live ✨</div>`
+    ? `<div style="text-align:center;padding:24px 0;color:var(--c-slate-600);font-size:13px">Suggestions will appear here live ✨</div>`
     : nextNotes.map((n,i)=>{
         const isTop = n.votes>0 && i===0;
         const eid = "nextnote-"+n.id;
-        return `<div id="${eid}" style="background:${isTop?"#6366f122":"#0f172a"};border:${isTop?2:1}px solid ${isTop?"#6366f1":"#4338ca44"};border-radius:8px;padding:9px 10px 9px 12px;font-size:13px;color:#e2e8f0;font-weight:${isTop?700:400};box-shadow:${isTop?"0 0 0 2px #6366f144,0 2px 8px rgba(0,0,0,.18)":"0 2px 6px rgba(0,0,0,.15)"};line-height:1.4;margin-bottom:8px">
+        return `<div id="${eid}" style="background:${isTop?"var(--c-indigo-22)":"var(--c-slate-900)"};border:${isTop?2:1}px solid ${isTop?"var(--c-indigo)":"var(--c-indigo-800-44)"};border-radius:8px;padding:9px 10px 9px 12px;font-size:13px;color:var(--c-slate-200);font-weight:${isTop?700:400};box-shadow:${isTop?"0 0 0 2px var(--c-indigo-44),0 2px 8px rgba(0,0,0,.18)":"0 2px 6px rgba(0,0,0,.15)"};line-height:1.4;margin-bottom:8px">
           <div style="display:flex;align-items:center;gap:8px">
             ${isTop?`<span style="font-size:12px;flex-shrink:0">🔥</span>`:""}
             <span class="item-text" style="flex:1">${n.text}</span>
             <div class="item-actions" style="display:flex;align-items:center;gap:4px;flex-shrink:0">
               ${n.creatorId===MY_ID?`
-              <button onclick="startInlineEdit('${eid}','${n.text.replace(/'/g,"\'")}',null)" title="Edit" style="background:none;border:none;cursor:pointer;font-size:12px;color:#64748b;padding:2px 4px">✏️</button>
-              <button onclick="deleteNextNote(${n.id})" title="Delete" style="background:none;border:none;cursor:pointer;font-size:12px;color:#64748b;padding:2px 4px">✕</button>`:""}
-              <button class="upvote-btn" onclick="upvoteNextNote(${n.id})" title="${myNoteVotes[n.id]?'Click to remove your vote':'Upvote'}" style="display:flex;flex-direction:column;align-items:center;gap:1px;background:${n.votes>0?"#6366f122":"rgba(255,255,255,.05)"};border:1.5px solid ${n.votes>0?"#6366f1":"#334155"};border-radius:7px;padding:4px 7px;min-width:34px;cursor:pointer;box-shadow:${myNoteVotes[n.id]?"0 0 0 2px #6366f1":"none"}">
-                <span style="font-size:11px;line-height:1;color:#94a3b8">▲</span>
-                <span class="vote-count" style="font-size:12px;font-weight:800;color:${n.votes>0?"#818cf8":"#64748b"};line-height:1;margin-top:1px">${n.votes}</span>
+              <button onclick="startInlineEdit('${eid}','${n.text.replace(/'/g,"\'")}',null)" title="Edit" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--c-slate-500);padding:2px 4px">✏️</button>
+              <button onclick="deleteNextNote(${n.id})" title="Delete" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--c-slate-500);padding:2px 4px">✕</button>`:""}
+              <button class="upvote-btn" onclick="upvoteNextNote(${n.id})" title="${myNoteVotes[n.id]?'Click to remove your vote':'Upvote'}" style="display:flex;flex-direction:column;align-items:center;gap:1px;background:${n.votes>0?"var(--c-indigo-22)":"rgba(255,255,255,.05)"};border:1.5px solid ${n.votes>0?"var(--c-indigo)":"var(--c-slate-700)"};border-radius:7px;padding:4px 7px;min-width:34px;cursor:pointer;box-shadow:${myNoteVotes[n.id]?"0 0 0 2px var(--c-indigo)":"none"}">
+                <span style="font-size:11px;line-height:1;color:var(--c-slate-400)">▲</span>
+                <span class="vote-count" style="font-size:12px;font-weight:800;color:${n.votes>0?"var(--c-indigo-400)":"var(--c-slate-500)"};line-height:1;margin-top:1px">${n.votes}</span>
               </button>
             </div>
           </div>
           <div class="item-edit-row" style="display:none;gap:6px;margin-top:6px">
-            <input style="flex:1;background:#1e293b;border:1.5px solid #6366f1;border-radius:6px;padding:5px 8px;font-size:13px;color:#e2e8f0;outline:none"
+            <input style="flex:1;background:var(--c-slate-800);border:1.5px solid var(--c-indigo);border-radius:6px;padding:5px 8px;font-size:13px;color:var(--c-slate-200);outline:none"
               onkeydown="if(event.key==='Enter'){saveNextNoteEdit(${n.id},this.value);cancelInlineEdit('${eid}')}if(event.key==='Escape')cancelInlineEdit('${eid}')"/>
             <button onclick="const inp=document.getElementById('${eid}').querySelector('.item-edit-row input');saveNextNoteEdit(${n.id},inp.value);cancelInlineEdit('${eid}')"
-              style="background:#6366f1;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer">Save</button>
+              style="background:var(--c-indigo);color:var(--c-white);border:none;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer">Save</button>
             <button onclick="cancelInlineEdit('${eid}')"
-              style="background:#334155;color:#94a3b8;border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer">Cancel</button>
+              style="background:var(--c-slate-700);color:var(--c-slate-400);border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer">Cancel</button>
           </div>
         </div>`;
       }).join("");
 
   notesWrap.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <span style="font-weight:800;font-size:14px;color:#f1f5f9">💬 Retro format suggestions</span>
-      <span style="background:#6366f144;color:#818cf8;border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700">${nextNotes.length}</span>
+      <span style="font-weight:800;font-size:14px;color:var(--c-slate-100)">💬 Retro format suggestions</span>
+      <span style="background:var(--c-indigo-44);color:var(--c-indigo-400);border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700">${nextNotes.length}</span>
     </div>
-    <div style="font-size:12px;font-style:italic;color:#64748b;border-left:3px solid #6366f1;padding-left:10px;margin-bottom:14px;line-height:1.5">What would make the next retro work better?</div>
+    <div style="font-size:12px;font-style:italic;color:var(--c-slate-500);border-left:3px solid var(--c-indigo);padding-left:10px;margin-bottom:14px;line-height:1.5">What would make the next retro work better?</div>
     <div id="nextnotes-list" style="flex:1">${notesHTML}</div>
     <div style="display:flex;gap:6px;margin-top:auto;padding-top:8px">
       <input id="next-note-input" placeholder="Add a suggestion — press Enter" onkeydown="if(event.key==='Enter')addNextNote()"
-        style="flex:1;background:#0f172a;border:1.5px solid #4338ca;border-radius:8px;padding:8px 11px;font-size:13px;color:#f1f5f9;outline:none"/>
-      <button onclick="addNextNote()" style="background:#6366f1;color:#fff;border:none;border-radius:8px;padding:0 13px;font-size:18px;font-weight:800">+</button>
+        style="flex:1;background:var(--c-slate-900);border:1.5px solid var(--c-indigo-800);border-radius:8px;padding:8px 11px;font-size:13px;color:var(--c-slate-100);outline:none"/>
+      <button onclick="addNextNote()" style="background:var(--c-indigo);color:var(--c-white);border:none;border-radius:8px;padding:0 13px;font-size:18px;font-weight:800">+</button>
     </div>`;
   panel.appendChild(notesWrap);
 }
@@ -1863,71 +1901,71 @@ function renderExport(panel) {
 
   // Storage info
   const info = document.createElement("div");
-  info.style.cssText = "background:#0f2a1a;border:1px solid #166534;border-radius:10px;padding:12px 16px;margin-bottom:20px;display:flex;gap:10px;align-items:flex-start";
-  info.innerHTML = `<span style="font-size:16px">🔥</span><div style="font-size:13px;color:#86efac;line-height:1.6"><strong>Firebase Realtime Database is active.</strong> All votes, notes, wins and actions sync in real-time across everyone's browsers. Data persists indefinitely — closing the tab or refreshing won't lose anything.<br/>Between sprints, Export a snapshot below, paste it somewhere safe, then Import it into the next sprint's board.</div>`;
+  info.style.cssText = "background:var(--c-green-panel);border:1px solid var(--c-green-panel-border);border-radius:10px;padding:12px 16px;margin-bottom:20px;display:flex;gap:10px;align-items:flex-start";
+  info.innerHTML = `<span style="font-size:16px">🔥</span><div style="font-size:13px;color:var(--c-green-300);line-height:1.6"><strong>Firebase Realtime Database is active.</strong> All votes, notes, wins and actions sync in real-time across everyone's browsers. Data persists indefinitely — closing the tab or refreshing won't lose anything.<br/>Between sprints, Export a snapshot below, paste it somewhere safe, then Import it into the next sprint's board.</div>`;
   panel.appendChild(info);
 
   // Sprint number control
   const sprintBox = document.createElement("div");
-  sprintBox.style.cssText = "background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px 24px;margin-bottom:16px";
+  sprintBox.style.cssText = "background:var(--c-slate-800);border:1px solid var(--c-slate-700);border-radius:12px;padding:20px 24px;margin-bottom:16px";
   sprintBox.innerHTML = `
-    <div style="font-size:15px;font-weight:800;color:#f1f5f9;margin-bottom:6px">⚙️ Sprint Number</div>
-    <div style="font-size:13px;color:#64748b;margin-bottom:14px">Increment at the start of each new sprint. Previous actions, health baselines and mood reference are <strong style="color:#4ade80">automatically carried forward</strong> — no manual import needed. Previous sprint data is preserved in Firebase.</div>
+    <div style="font-size:15px;font-weight:800;color:var(--c-slate-100);margin-bottom:6px">⚙️ Sprint Number</div>
+    <div style="font-size:13px;color:var(--c-slate-500);margin-bottom:14px">Increment at the start of each new sprint. Previous actions, health baselines and mood reference are <strong style="color:var(--c-green)">automatically carried forward</strong> — no manual import needed. Previous sprint data is preserved in Firebase.</div>
     <div style="display:flex;align-items:center;gap:10px">
-      <span style="font-size:13px;color:#94a3b8">Current sprint:</span>
+      <span style="font-size:13px;color:var(--c-slate-400)">Current sprint:</span>
       <input id="sprint-num-input" type="number" value="${sprintNum}" min="1" max="999"
-        style="width:80px;background:#0f172a;border:1.5px solid #334155;border-radius:8px;padding:7px 12px;font-size:16px;font-weight:800;color:#f59e0b;outline:none;text-align:center"/>
-      <button onclick="applySprintNum()" style="background:#f59e0b;color:#020617;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:800">Apply</button>
-      <span id="sprint-num-ok"  style="font-size:12px;color:#4ade80;display:none"></span>
-      <span id="sprint-num-err" style="font-size:12px;color:#f87171;display:none"></span>
+        style="width:80px;background:var(--c-slate-900);border:1.5px solid var(--c-slate-700);border-radius:8px;padding:7px 12px;font-size:16px;font-weight:800;color:var(--c-accent);outline:none;text-align:center"/>
+      <button onclick="applySprintNum()" style="background:var(--c-accent);color:var(--c-slate-950);border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:800">Apply</button>
+      <span id="sprint-num-ok"  style="font-size:12px;color:var(--c-green);display:none"></span>
+      <span id="sprint-num-err" style="font-size:12px;color:var(--c-red);display:none"></span>
     </div>`;
   panel.appendChild(sprintBox);
 
   // Export current sprint
   const exportCurrentBox = document.createElement("div");
-  exportCurrentBox.style.cssText = "background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px 24px;margin-bottom:16px";
+  exportCurrentBox.style.cssText = "background:var(--c-slate-800);border:1px solid var(--c-slate-700);border-radius:12px;padding:20px 24px;margin-bottom:16px";
   exportCurrentBox.innerHTML = `
-    <div style="font-size:15px;font-weight:800;color:#f1f5f9;margin-bottom:6px">📋 Export Sprint ${sprintNum}</div>
-    <div style="font-size:13px;color:#64748b;margin-bottom:16px">Copies a JSON snapshot of the current sprint to your clipboard — votes, notes, wins, actions and health results. Useful for pasting into a document or importing into a future board.</div>
-    <button id="export-current-btn" onclick="handleExportCurrent()" style="background:#f59e0b;color:#020617;border:none;border-radius:10px;padding:11px 26px;font-size:14px;font-weight:800;transition:all .3s;display:flex;align-items:center;gap:8px">📋 Copy Sprint ${sprintNum} to clipboard</button>`;
+    <div style="font-size:15px;font-weight:800;color:var(--c-slate-100);margin-bottom:6px">📋 Export Sprint ${sprintNum}</div>
+    <div style="font-size:13px;color:var(--c-slate-500);margin-bottom:16px">Copies a JSON snapshot of the current sprint to your clipboard — votes, notes, wins, actions and health results. Useful for pasting into a document or importing into a future board.</div>
+    <button id="export-current-btn" onclick="handleExportCurrent()" style="background:var(--c-accent);color:var(--c-slate-950);border:none;border-radius:10px;padding:11px 26px;font-size:14px;font-weight:800;transition:all .3s;display:flex;align-items:center;gap:8px">📋 Copy Sprint ${sprintNum} to clipboard</button>`;
   panel.appendChild(exportCurrentBox);
 
   // Export all sprints
   const exportBox = document.createElement("div");
-  exportBox.style.cssText = "background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px 24px;margin-bottom:16px";
+  exportBox.style.cssText = "background:var(--c-slate-800);border:1px solid var(--c-slate-700);border-radius:12px;padding:20px 24px;margin-bottom:16px";
   exportBox.innerHTML = `
-    <div style="font-size:15px;font-weight:800;color:#f1f5f9;margin-bottom:6px">📚 Export All Sprints</div>
-    <div style="font-size:13px;color:#64748b;margin-bottom:16px">Downloads a complete JSON archive of every sprint stored in Firebase — all votes, notes, actions and health data across all sprint numbers.</div>
-    <button id="export-all-btn" onclick="handleExportAll()" style="background:#334155;color:#e2e8f0;border:1.5px solid #475569;border-radius:10px;padding:11px 26px;font-size:14px;font-weight:800;transition:all .3s;display:flex;align-items:center;gap:8px">📥 Download all sprint data</button>`;
+    <div style="font-size:15px;font-weight:800;color:var(--c-slate-100);margin-bottom:6px">📚 Export All Sprints</div>
+    <div style="font-size:13px;color:var(--c-slate-500);margin-bottom:16px">Downloads a complete JSON archive of every sprint stored in Firebase — all votes, notes, actions and health data across all sprint numbers.</div>
+    <button id="export-all-btn" onclick="handleExportAll()" style="background:var(--c-slate-700);color:var(--c-slate-200);border:1.5px solid var(--c-slate-600);border-radius:10px;padding:11px 26px;font-size:14px;font-weight:800;transition:all .3s;display:flex;align-items:center;gap:8px">📥 Download all sprint data</button>`;
   panel.appendChild(exportBox);
 
   // Import
   const importBox = document.createElement("div");
-  importBox.style.cssText = "background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px 24px;margin-bottom:16px";
+  importBox.style.cssText = "background:var(--c-slate-800);border:1px solid var(--c-slate-700);border-radius:12px;padding:20px 24px;margin-bottom:16px";
   importBox.innerHTML = `
-    <div style="font-size:15px;font-weight:800;color:#f1f5f9;margin-bottom:6px">Import Previous Sprint</div>
-    <div style="font-size:13px;color:#64748b;margin-bottom:16px">Paste the export JSON from the previous sprint. Loads previous actions into Check-in and sets health baselines. <strong style="color:#f59e0b">Writes to Firebase — affects everyone.</strong></div>
-    <textarea id="import-ta" placeholder='Paste previous sprint JSON here...' style="width:100%;min-height:160px;background:#0f172a;border:1.5px solid #334155;border-radius:10px;padding:12px 14px;font-size:12px;font-family:monospace;color:#94a3b8;outline:none;resize:vertical;box-sizing:border-box;line-height:1.6"></textarea>
-    <div id="import-err" style="color:#f87171;font-size:12px;margin-top:6px"></div>
-    <div id="import-ok" style="color:#4ade80;font-size:12px;margin-top:6px"></div>
-    <button onclick="handleImport()" style="margin-top:12px;background:#3b82f6;color:#fff;border:none;border-radius:10px;padding:10px 24px;font-size:14px;font-weight:700;transition:all .2s">Load previous sprint →</button>`;
+    <div style="font-size:15px;font-weight:800;color:var(--c-slate-100);margin-bottom:6px">Import Previous Sprint</div>
+    <div style="font-size:13px;color:var(--c-slate-500);margin-bottom:16px">Paste the export JSON from the previous sprint. Loads previous actions into Check-in and sets health baselines. <strong style="color:var(--c-accent)">Writes to Firebase — affects everyone.</strong></div>
+    <textarea id="import-ta" placeholder='Paste previous sprint JSON here...' style="width:100%;min-height:160px;background:var(--c-slate-900);border:1.5px solid var(--c-slate-700);border-radius:10px;padding:12px 14px;font-size:12px;font-family:monospace;color:var(--c-slate-400);outline:none;resize:vertical;box-sizing:border-box;line-height:1.6"></textarea>
+    <div id="import-err" style="color:var(--c-red);font-size:12px;margin-top:6px"></div>
+    <div id="import-ok" style="color:var(--c-green);font-size:12px;margin-top:6px"></div>
+    <button onclick="handleImport()" style="margin-top:12px;background:var(--c-blue);color:var(--c-white);border:none;border-radius:10px;padding:10px 24px;font-size:14px;font-weight:700;transition:all .2s">Load previous sprint →</button>`;
   panel.appendChild(importBox);
 
   // Danger zone
   const danger = document.createElement("div");
-  danger.style.cssText = "background:#1e293b;border:1px solid #7f1d1d;border-radius:12px;padding:20px 24px";
+  danger.style.cssText = "background:var(--c-slate-800);border:1px solid var(--c-red-900);border-radius:12px;padding:20px 24px";
   danger.innerHTML = `
-    <div style="font-size:15px;font-weight:800;color:#f87171;margin-bottom:6px">⚠️ Danger Zone</div>
+    <div style="font-size:15px;font-weight:800;color:var(--c-red);margin-bottom:6px">⚠️ Danger Zone</div>
     <div style="display:flex;flex-direction:column;gap:12px">
-      <div style="background:#0f172a;border-radius:8px;padding:14px 16px;border:1px solid #7f1d1d22">
-        <div style="font-size:13px;font-weight:700;color:#fca5a5;margin-bottom:4px">Reset current sprint</div>
-        <div style="font-size:12px;color:#64748b;margin-bottom:10px">Clears votes, notes, wins and actions for Sprint ${sprintNum} only. Other sprints untouched. <strong style="color:#f87171">Cannot be undone.</strong></div>
-        <button onclick="handleClearAll()" style="background:#7f1d1d;color:#fca5a5;border:1.5px solid #ef4444;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:700">🗑️ Reset Sprint ${sprintNum}</button>
+      <div style="background:var(--c-slate-900);border-radius:8px;padding:14px 16px;border:1px solid var(--c-red-900-22)">
+        <div style="font-size:13px;font-weight:700;color:var(--c-red-300);margin-bottom:4px">Reset current sprint</div>
+        <div style="font-size:12px;color:var(--c-slate-500);margin-bottom:10px">Clears votes, notes, wins and actions for Sprint ${sprintNum} only. Other sprints untouched. <strong style="color:var(--c-red)">Cannot be undone.</strong></div>
+        <button onclick="handleClearAll()" style="background:var(--c-red-900);color:var(--c-red-300);border:1.5px solid var(--c-red-600);border-radius:8px;padding:8px 18px;font-size:13px;font-weight:700">🗑️ Reset Sprint ${sprintNum}</button>
       </div>
-      <div style="background:#0f172a;border-radius:8px;padding:14px 16px;border:1px solid #7f1d1d22">
-        <div style="font-size:13px;font-weight:700;color:#fca5a5;margin-bottom:4px">Delete ALL sprint data</div>
-        <div style="font-size:12px;color:#64748b;margin-bottom:10px">Permanently wipes every sprint from Firebase — all history gone. <strong style="color:#f87171">Irreversible. Cannot be undone.</strong></div>
-        <button onclick="handleDeleteAll()" style="background:#450a0a;color:#fca5a5;border:1.5px solid #ef4444;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:700">💀 Delete everything</button>
+      <div style="background:var(--c-slate-900);border-radius:8px;padding:14px 16px;border:1px solid var(--c-red-900-22)">
+        <div style="font-size:13px;font-weight:700;color:var(--c-red-300);margin-bottom:4px">Delete ALL sprint data</div>
+        <div style="font-size:12px;color:var(--c-slate-500);margin-bottom:10px">Permanently wipes every sprint from Firebase — all history gone. <strong style="color:var(--c-red)">Irreversible. Cannot be undone.</strong></div>
+        <button onclick="handleDeleteAll()" style="background:var(--c-red-950);color:var(--c-red-300);border:1.5px solid var(--c-red-600);border-radius:8px;padding:8px 18px;font-size:13px;font-weight:700">💀 Delete everything</button>
       </div>
     </div>`;
   panel.appendChild(danger);
@@ -2017,15 +2055,15 @@ function updateTimerUI() {
 
   if(done) {
     label.textContent = "✓ Done!";
-    arc.style.stroke  = "#4ade80";
+    arc.style.stroke  = "var(--c-green)";
     arc.style.strokeDashoffset = "0";
   } else {
     const mins = Math.floor(remaining / 60);
     const secs = remaining % 60;
     label.textContent = mins + ":" + String(secs).padStart(2,"0");
     arc.style.stroke  = running
-      ? (progress > 0.5 ? "#f59e0b" : progress > 0.2 ? "#fb923c" : "#f87171")
-      : "#f59e0b";
+      ? (progress > 0.5 ? "var(--c-accent)" : progress > 0.2 ? "var(--c-orange)" : "var(--c-red)")
+      : "var(--c-accent)";
     arc.style.strokeDashoffset = String(CIRC * (1 - progress));
   }
 }
