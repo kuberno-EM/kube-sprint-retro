@@ -112,6 +112,7 @@
         </svg>
         <span id="timer-label">4:00</span>
       </button>
+      <button id="theme-btn" class="cog-btn" onclick="cycleTheme()" title="Cycle board theme — synced to everyone" style="display:flex;align-items:center;gap:6px;width:auto">🎨<span id="theme-btn-label" style="font-size:11px;font-weight:700"></span></button>
       <button class="cog-btn" onclick="openSettings()" title="Settings / Export / Import">⚙️</button>
       <div style="text-align:right;font-size:12px;color:var(--c-slate-500)">
         <div id="header-actions" style="color:var(--c-accent);font-weight:700"></div>
@@ -333,7 +334,7 @@ const NOTE_ROTS = [-2,1.5,-1,2.5,-1.5,1,-2.5,0.5];
    Central home for the board's identity and section headings. Change
    these to re-theme the wording. (Tab labels live in the nav markup —
    they're matched by text in setTab, so leave those in place.)         */
-const COPY = {
+const BASE_COPY = {
   brand: "Agile Ceremony",
   boardName: "Review Board 🖖",
   title: (n) => "Sprint " + n + " — " + COPY.boardName,
@@ -352,6 +353,78 @@ const COPY = {
   cagePrefix: "🎬",
   barbieHint: "✨ “You can be anything” — even a high-performing team",
 };
+
+/* ─── THEMES (facilitator-cycled, synced to everyone via Firebase) ──────
+   Active look = the :root palette + BASE_COPY, with the current theme's
+   overrides layered on top.
+   TO ADD A THEME: append an object below —
+     { id, name, palette:{ '--c-…':'#…', … }, copy:{ …partial of COPY… } }
+   `palette` keys are the CSS vars from :root; anything omitted falls back to
+   the default. `copy` is optional (top-level keys and/or individual
+   `sections` entries). The first entry is the default.                    */
+const THEMES = [
+  { id:"command", name:"Command Deck", palette:{}, copy:{} },
+  {
+    id:"dreamhouse", name:"Dream House",
+    palette:{
+      '--c-slate-950':'#1a0712', '--c-slate-900':'#2a0a1f', '--c-slate-800':'#3d1230',
+      '--c-slate-700':'#5a1f47', '--c-slate-600':'#7a3563', '--c-slate-500':'#c77fa8',
+      '--c-slate-400':'#f0a6cf', '--c-slate-200':'#ffd6ec', '--c-slate-100':'#fff0f8',
+      '--c-accent':'#ec4899',
+    },
+    copy:{ brand:"Plastic Fantastic", boardName:"Dream Board 💖" },
+  },
+  {
+    id:"console", name:"Sprint Console",
+    palette:{
+      '--c-slate-950':'#000000', '--c-slate-900':'#020a04', '--c-slate-800':'#04160b',
+      '--c-slate-700':'#0d3b1e', '--c-slate-600':'#1a5c30', '--c-slate-500':'#3fa35f',
+      '--c-slate-400':'#6ee787', '--c-slate-200':'#b7ffce', '--c-slate-100':'#d6ffe0',
+      '--c-accent':'#39ff14',
+    },
+    copy:{ brand:"System Log", boardName:"Sprint Console >_" },
+  },
+];
+
+// Active copy — reassigned by applyTheme(); render()/updateHeader() read it live.
+let COPY = BASE_COPY;
+let currentTheme = THEMES[0].id;
+let _appliedPaletteKeys = [];
+
+function themeById(id) { return THEMES.find(t => t.id === id) || THEMES[0]; }
+
+function applyTheme(id) {
+  const t = themeById(id);
+  currentTheme = t.id;
+  // Palette: inline vars on :root override the stylesheet defaults. Clearing
+  // the previously-applied keys reverts anything this theme doesn't set.
+  const rs = document.documentElement.style;
+  _appliedPaletteKeys.forEach(k => rs.removeProperty(k));
+  _appliedPaletteKeys = Object.keys(t.palette || {});
+  Object.entries(t.palette || {}).forEach(([k, v]) => rs.setProperty(k, v));
+  // Copy: layer this theme's partial over the base
+  const c = t.copy || {};
+  COPY = { ...BASE_COPY, ...c, sections: { ...BASE_COPY.sections, ...(c.sections || {}) } };
+  updateThemeButton();
+  updateHeader();
+  render(false);
+}
+
+function updateThemeButton() {
+  const lbl = document.getElementById("theme-btn-label");
+  if(lbl) lbl.textContent = themeById(currentTheme).name;
+}
+
+// Advance to the next theme — writes to Firebase so it changes for everyone
+function cycleTheme() {
+  const i = THEMES.findIndex(t => t.id === currentTheme);
+  const next = THEMES[(i + 1) % THEMES.length];
+  db.ref("sprints/meta/theme").set(next.id);
+}
+
+function initThemeSync() {
+  db.ref("sprints/meta/theme").on("value", s => applyTheme(s.val() || THEMES[0].id));
+}
 
 /* ─── STATE ─────────────────────────────────────────────────── */
 // Shared (from Firebase)
@@ -2124,6 +2197,7 @@ window.addEventListener("load", async ()=>{
   initListeners();
   initMetaListeners();
   initTimerSync();
+  initThemeSync();
 
   // Hide loader once first data arrives (or after 2s)
   let shown = false;
