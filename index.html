@@ -905,40 +905,45 @@ function updateHistoryBanner() {
   }
 }
 
-// Populate the Settings picker with every sprint stored in Firebase
+// Populate the Settings picker with every sprint stored in Firebase.
+// Fetch first: renderExport() calls this before the panel is attached to the
+// document, so the target element only exists once the await has yielded.
 async function loadSprintList() {
-  const el = document.getElementById("sprint-browse-list");
-  if(!el) return;
+  let all;
   try {
     const snap = await db.ref("sprints").once("value");
-    const all  = snap.val() || {};
-    const nums = Object.keys(all)
-      .filter(k => /^s\d+$/.test(k))
-      .map(k => parseInt(k.slice(1), 10))
-      .sort((a, b) => b - a);
-    if(!nums.length) { el.innerHTML = `<span style="font-style:italic">No sprints found.</span>`; return; }
-    el.innerHTML = nums.map(n => {
-      const isLive    = n === sprintNum;
-      const isViewing = isHistory && n === viewingSprint;
-      let right;
-      if(isViewing) {
-        right = `<span style="color:var(--c-indigo-400);font-weight:700">👁 Viewing</span>`;
-      } else if(isLive) {
-        right = isHistory
-          ? `<button onclick="returnToLive()" style="background:var(--c-green-700);color:var(--c-white);border:none;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer">Return to live</button>`
-          : `<span style="color:var(--c-green);font-weight:700">● Live</span>`;
-      } else {
-        right = `<button onclick="viewSprint(${n})" style="background:var(--c-indigo);color:var(--c-white);border:none;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer">View</button>`;
-      }
-      return `<div style="display:flex;justify-content:space-between;align-items:center;background:var(--c-slate-900);border:1px solid ${isViewing?"var(--c-indigo)":isLive?"var(--c-green-panel-border)":"var(--c-slate-700)"};border-radius:8px;padding:9px 14px">
-        <span style="font-weight:700;color:var(--c-slate-200)">Sprint ${n}${isLive?'<span style="color:var(--c-slate-500);font-weight:400"> · current</span>':''}</span>
-        ${right}
-      </div>`;
-    }).join("");
+    all = snap.val() || {};
   } catch(e) {
     console.error(e);
-    el.innerHTML = `<span style="color:var(--c-red)">⚠️ Couldn't load sprint list — check console.</span>`;
+    const errEl = document.getElementById("sprint-browse-list");
+    if(errEl) errEl.innerHTML = `<span style="color:var(--c-red)">⚠️ Couldn't load sprint list — check console.</span>`;
+    return;
   }
+  const el = document.getElementById("sprint-browse-list");
+  if(!el) return;
+  const nums = Object.keys(all)
+    .filter(k => /^s\d+$/.test(k))
+    .map(k => parseInt(k.slice(1), 10))
+    .sort((a, b) => b - a);
+  if(!nums.length) { el.innerHTML = `<span style="font-style:italic">No sprints found.</span>`; return; }
+  el.innerHTML = nums.map(n => {
+    const isLive    = n === sprintNum;
+    const isViewing = isHistory && n === viewingSprint;
+    let right;
+    if(isViewing) {
+      right = `<span style="color:var(--c-indigo-400);font-weight:700">👁 Viewing</span>`;
+    } else if(isLive) {
+      right = isHistory
+        ? `<button onclick="returnToLive()" style="background:var(--c-green-700);color:var(--c-white);border:none;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer">Return to live</button>`
+        : `<span style="color:var(--c-green);font-weight:700">● Live</span>`;
+    } else {
+      right = `<button onclick="viewSprint(${n})" style="background:var(--c-indigo);color:var(--c-white);border:none;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer">View</button>`;
+    }
+    return `<div style="display:flex;justify-content:space-between;align-items:center;background:var(--c-slate-900);border:1px solid ${isViewing?"var(--c-indigo)":isLive?"var(--c-green-panel-border)":"var(--c-slate-700)"};border-radius:8px;padding:9px 14px">
+      <span style="font-weight:700;color:var(--c-slate-200)">Sprint ${n}${isLive?'<span style="color:var(--c-slate-500);font-weight:400"> · current</span>':''}</span>
+      ${right}
+    </div>`;
+  }).join("");
 }
 
 /* ─── WRITE HELPERS ─────────────────────────────────────────── */
