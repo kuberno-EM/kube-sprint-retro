@@ -210,7 +210,7 @@ const BASE_NOTE_COLS = [
   {id:"ideas",label:"💡 Ideas & proposals",    bg:"#f0fdf4",border:"#86efac",accent:"#15803d"},
 ];
 let NOTE_COLS = BASE_NOTE_COLS;
-const PROMPTS = {
+const BASE_PROMPTS = {
   well: [
     // Star Trek
     "Captain's log — what made this sprint worthy of the record?",
@@ -318,9 +318,10 @@ const PROMPTS = {
     "Do you want to come to my dream house? What would the dream sprint look like?",
   ],
 };
+let PROMPTS = BASE_PROMPTS;
 // Pick a random prompt for each column on each render
 function getPrompt(col) {
-  const arr = PROMPTS[col];
+  const arr = PROMPTS[col] || BASE_PROMPTS[col];
   return arr[Math.floor(Math.random() * arr.length)];
 }
 const NEXT_VOTES_DEF = [
@@ -366,54 +367,316 @@ const BASE_COPY = {
    the default. `copy` is optional (top-level keys and/or individual
    `sections` entries). The first entry is the default.                    */
 const THEMES = [
-  { id:"command", name:"Command Deck", palette:{}, copy:{} },
   {
-    id:"dreamhouse", name:"Dream House",
+    id:"corporate", name:"Kuberno Corporate",
+    palette:{
+      '--c-slate-950':'#060b16', '--c-slate-900':'#0d1526', '--c-slate-800':'#182236',
+      '--c-slate-700':'#2a3852', '--c-slate-600':'#465873', '--c-slate-500':'#6b7d99',
+      '--c-slate-400':'#93a3bf', '--c-slate-200':'#dbe3ef', '--c-slate-100':'#f2f6fc',
+      '--c-accent':'#f5a524',
+    },
+    copy:{
+      brand:"Sprint Ceremony", boardName:"Review Board",
+      sections:{
+        checkin:["Previous Actions","How did the team do on last sprint's commitments?"],
+        mood:["Team Sentiment","Share how the sprint felt — you can update your vote any time"],
+        health:["Delivery Health","Rate each area — results update live across the team"],
+        wins:["Wins","Recognise what went well this sprint"],
+        retro:["Retrospective","Notes appear live — look for the themes before grouping"],
+        next:["Next Sprint","Vote on how we run the next one — up to 3 votes each"],
+        export:["Export & Import","Carry this sprint forward, or load a previous one"],
+      },
+      healthStrip:"Summary — dominant rating per area",
+      signals:(n)=>"📊 "+n+" notes across 3 columns",
+      cagePrefix:"💬",
+      barbieHint:"Continuous improvement, one sprint at a time",
+    },
+    moods:{
+      ghost:{label:"Checked out", emoji:"😶‍🌫️", col:"#94a3b8", img:null},
+      angry:{label:"Frustrated", emoji:"😠", col:"#f87171", img:null},
+      stressed:{label:"Overloaded", emoji:"😫", col:"#fb923c", img:null},
+      meh:{label:"Neutral", emoji:"😐", col:"#fde047", img:null},
+      focused:{label:"Steady", emoji:"🙂", col:"#a3e635", img:null},
+      happy:{label:"Positive", emoji:"😀", col:"#86efac", img:null},
+      excited:{label:"Energised", emoji:"🤩", col:"#4ade80", img:null},
+    },
+    noteCols:{
+      well:{label:"✅ What went well?"},
+      bad:{label:"⚠️ What didn't go well?", border:"#fca5a5", accent:"#dc2626"},
+      ideas:{label:"💡 Ideas & improvements"},
+    },
+    prompts:{
+      well:["What went well that we should keep doing?","Where did the team deliver strongly?","What made progress feel smooth this sprint?","Which collaboration moment stood out?"],
+      bad:["What slowed us down this sprint?","Where did we lose time or clarity?","What friction kept coming back?","What would you fix if we ran this sprint again?"],
+      ideas:["What experiment is worth trying next sprint?","What small change would compound over time?","What should we start, stop, or continue?","What process tweak could save us time?"],
+    },
+    quotes:["Small improvements compound.","Progress over perfection.","Celebrate the wins, learn from the rest.","A good retro changes the next sprint.","Feedback is a gift.","Inspect and adapt."],
+  },
+  {
+    id:"starwars", name:"Star Wars",
+    palette:{
+      '--c-slate-950':'#000000', '--c-slate-900':'#05070d', '--c-slate-800':'#0d1220',
+      '--c-slate-700':'#1c2740', '--c-slate-600':'#33456b', '--c-slate-500':'#5b7099',
+      '--c-slate-400':'#8fa3c9', '--c-slate-200':'#d5e0f2', '--c-slate-100':'#eef3fb',
+      '--c-accent':'#ffe81f',
+    },
+    copy:{
+      brand:"A long time ago…", boardName:"Galactic Retro ✨",
+      sections:{
+        checkin:["The Council's Orders","Did we honour last sprint's commitments, or has the Senate failed us?"],
+        mood:["A Disturbance in the Force","Tap your mood — the Force flows through the whole team"],
+        health:["Systems Check, R2","Rate each system — readings update live across the fleet"],
+        wins:["Victories of the Rebellion","Name a win — every rebellion is built on hope"],
+        retro:["The Jedi Council Convenes","Speak freely — even the smallest voice moves the galaxy"],
+        next:["Charting the Next Jump","Vote on our next hyperspace route — up to 3 votes each"],
+        export:["The Jedi Archives","Export this sprint to the Archives, or restore a previous record"],
+      },
+      healthStrip:"Damage report — dominant reading per system",
+      signals:(n)=>"📡 "+n+" transmissions across 3 channels",
+      cagePrefix:"⭐",
+      barbieHint:"“Do or do not — there is no try.”",
+    },
+    noteCols:{
+      well:{label:"✅ The Light Side"},
+      bad:{label:"🌑 The Dark Side", border:"#f87171", accent:"#dc2626"},
+      ideas:{label:"💡 The Force Awakens"},
+    },
+    prompts:{
+      well:["The Force was strong — where did we feel it most?","What did we actually do (do or do not)?","Which moment gave the Rebellion hope?","What shipped like the Falcon making the jump?"],
+      bad:["I've got a bad feeling about this — what was it?","Where did the dark side cloud our vision?","What trap did we fly into?","What process failed us for the last time?"],
+      ideas:["What new hope is worth pursuing next sprint?","Always in motion is the future — what should we set in motion?","What should we trust the Force and try?","What dormant idea is ready to awaken?"],
+    },
+    quotes:["The Force will be with you, always.","Never tell me the odds.","This is the way.","Rebellions are built on hope.","Great, kid — don't get cocky.","Do or do not. There is no try."],
+  },
+  {
+    id:"startrek", name:"Star Trek",
+    palette:{
+      '--c-slate-950':'#000000', '--c-slate-900':'#07070f', '--c-slate-800':'#12121f',
+      '--c-slate-700':'#2b2b45', '--c-slate-600':'#4a4a6b', '--c-slate-500':'#7c7ca3',
+      '--c-slate-400':'#a6a6cc', '--c-slate-200':'#dcdcf0', '--c-slate-100':'#f0f0fb',
+      '--c-accent':'#ff9c00',
+    },
+    copy:{
+      brand:"Stardate Ceremony", boardName:"Bridge Debrief 🖖",
+      sections:{
+        checkin:["Captain's Log — Prior Orders","Did the crew complete last sprint's directives?"],
+        mood:["Crew Morale Report","Tap your mood — the wellbeing of the many matters"],
+        health:["Ship Systems","Everyone rates each system once — readings update live on the bridge"],
+        wins:["Commendations","Log a win before the debrief — worthy of the ship's record"],
+        retro:["Bridge Debrief","Speak freely, Number One — the floor is open"],
+        next:["Setting a New Course","Engage which heading? Up to 3 votes each"],
+        export:["The Ship's Log","Export this stardate, or restore a previous log"],
+      },
+      healthStrip:"Damage report — dominant reading per system",
+      signals:(n)=>"📡 "+n+" readings across 3 channels",
+      cagePrefix:"🖖",
+      barbieHint:"“Live long and prosper.”",
+    },
+    moods:{
+      ghost:{label:"Abandon ship", emoji:"💀", col:"#94a3b8", img:null},
+      angry:{label:"Red alert!", emoji:"🚨", col:"#f87171", img:null},
+      stressed:{label:"Shields failing", emoji:"⚡", col:"#fb923c", img:null},
+      meh:{label:"Highly illogical", emoji:"🖖", col:"#fde047", img:null},
+      focused:{label:"Steady as she goes", emoji:"🧑‍🚀", col:"#a3e635", img:null},
+      happy:{label:"Make it so", emoji:"🛸", col:"#86efac", img:null},
+      excited:{label:"To boldly go!", emoji:"🚀", col:"#4ade80", img:null},
+    },
+    noteCols:{
+      well:{label:"✅ Engage"},
+      bad:{label:"🚨 Damage Report", border:"#f87171", accent:"#dc2626"},
+      ideas:{label:"💡 To Boldly Go"},
+    },
+    prompts:{
+      well:["Captain's log — what made this sprint worthy of the record?","Make it so — what got made, and made well?","What helped the crew live long and prosper?","Where did the team boldly go?"],
+      bad:["Damage report — what hit the shields?","What was highly illogical this sprint?","It's worse than that — what flatlined, Jim?","Red alert — what put the crew under pressure?"],
+      ideas:["To boldly go — what experiment hasn't been tried?","What would beam us to a better sprint?","Set phasers to improve — what do we fix next?","What new workflow should we seek out?"],
+    },
+    quotes:["Live long and prosper.","Make it so.","Resistance is futile.","Highly illogical.","Engage.","Space: the final frontier."],
+  },
+  {
+    id:"reddwarf", name:"Red Dwarf",
+    palette:{
+      '--c-slate-950':'#0a0605', '--c-slate-900':'#160b09', '--c-slate-800':'#241310',
+      '--c-slate-700':'#3d2019', '--c-slate-600':'#5e3326', '--c-slate-500':'#8a5a45',
+      '--c-slate-400':'#c08a6f', '--c-slate-200':'#f0d4c4', '--c-slate-100':'#fbeee6',
+      '--c-accent':'#e8502e',
+    },
+    copy:{
+      brand:"Smeg Ceremony", boardName:"Red Dwarf Retro 🚀",
+      sections:{
+        checkin:["Holly's Status Report","Did we do the actions, or has it all gone a bit smeg?"],
+        mood:["Morale on Deck 13","Tap your mood — even Rimmer gets a vote"],
+        health:["Ship Systems","Rate each system — Holly's running diagnostics live"],
+        wins:["Smeg-tastic Wins","Name a win — you've earned a Leopard Lager"],
+        retro:["Deck 13 Debrief","Speak up — nobody here is a total smeghead"],
+        next:["Course for Earth","Three million years from home — vote our heading (3 max)"],
+        export:["Holly's Memory Banks","Export this sprint, or reboot from a previous backup"],
+      },
+      healthStrip:"Diagnostics — dominant reading per system",
+      signals:(n)=>"📡 "+n+" readings across 3 channels",
+      cagePrefix:"🚀",
+      barbieHint:"“Smoke me a kipper, I'll be back for breakfast.”",
+    },
+    moods:{
+      ghost:{label:"Deader than dead", emoji:"💀", col:"#94a3b8", img:null},
+      angry:{label:"Total smeghead", emoji:"🤬", col:"#f87171", img:null},
+      stressed:{label:"It's a bit smeg", emoji:"⚡", col:"#fb923c", img:null},
+      meh:{label:"Everybody's dead, Dave", emoji:"😐", col:"#fde047", img:null},
+      focused:{label:"Steady, Kryten", emoji:"🤖", col:"#a3e635", img:null},
+      happy:{label:"Leopard Lager o'clock", emoji:"🍺", col:"#86efac", img:null},
+      excited:{label:"Ace!", emoji:"😎", col:"#4ade80", img:null},
+    },
+    noteCols:{
+      well:{label:"✅ Ace"},
+      bad:{label:"💩 Smeg", border:"#c08a6f", accent:"#e8502e"},
+      ideas:{label:"💡 Boys from the Dwarf"},
+    },
+    prompts:{
+      well:["What was totally ace this sprint?","Where did the boys from the Dwarf pull it off?","What went right for once (don't jinx it)?","What deserves a Leopard Lager?"],
+      bad:["What went a bit smeg?","Who or what was the smeghead this sprint?","What blew up like a curry from the dispenser?","Everybody's dead, Dave — what died this sprint?"],
+      ideas:["What mad idea is worth a punt?","What would Holly (IQ 6000) suggest?","What should we try before the next 3 million years?","What's our course for Earth next sprint?"],
+    },
+    quotes:["Smoke me a kipper, I'll be back for breakfast.","Everybody's dead, Dave.","It's a smeg-up.","I'm a genius — IQ of 6000.","Better dead than smeg.","Gazpacho soup!"],
+  },
+  {
+    id:"lotr", name:"Lord of the Rings",
+    palette:{
+      '--c-slate-950':'#080a06', '--c-slate-900':'#0f130b', '--c-slate-800':'#1a2013',
+      '--c-slate-700':'#2f3a22', '--c-slate-600':'#4c5c38', '--c-slate-500':'#77895a',
+      '--c-slate-400':'#a7b884', '--c-slate-200':'#dfe8c9', '--c-slate-100':'#f2f6e6',
+      '--c-accent':'#d4af37',
+    },
+    copy:{
+      brand:"The Fellowship Convenes", boardName:"Council of Elrond 💍",
+      sections:{
+        checkin:["The Council's Charge","Did we keep the promises made at the last council?"],
+        mood:["The Heart of the Fellowship","Tap your mood — even the smallest person can change the course"],
+        health:["The Strength of Middle-earth","Rate each realm — the reckoning updates live"],
+        wins:["Deeds of Renown","Name a win — songs will be sung of these"],
+        retro:["The Council of Elrond","Speak, and be heard — you have my sword, my bow, and my axe"],
+        next:["The Road Goes Ever On","Which path do we take? Up to 3 votes each"],
+        export:["The Red Book","Export this chapter, or reopen a previous tale"],
+      },
+      healthStrip:"The reckoning — dominant reading per realm",
+      signals:(n)=>"📜 "+n+" tidings across 3 channels",
+      cagePrefix:"💍",
+      barbieHint:"“Even the smallest person can change the course of the future.”",
+    },
+    moods:{
+      ghost:{label:"Gone to the shadow", emoji:"💀", col:"#94a3b8", img:null},
+      angry:{label:"The ring consumes", emoji:"😡", col:"#f87171", img:null},
+      stressed:{label:"They are coming", emoji:"⚡", col:"#fb923c", img:null},
+      meh:{label:"One does not simply", emoji:"😐", col:"#fde047", img:null},
+      focused:{label:"Keeping it secret, safe", emoji:"🧙", col:"#a3e635", img:null},
+      happy:{label:"Second breakfast", emoji:"🍗", col:"#86efac", img:null},
+      excited:{label:"For Frodo!", emoji:"⚔️", col:"#4ade80", img:null},
+    },
+    noteCols:{
+      well:{label:"✅ The Light of Eärendil"},
+      bad:{label:"🌋 Into Mordor", border:"#f87171", accent:"#dc2626"},
+      ideas:{label:"💡 The Road Goes Ever On"},
+    },
+    prompts:{
+      well:["What deed this sprint is worthy of song?","Where did the fellowship hold strong?","What did we carry to Mordor and back?","What small act changed the course?"],
+      bad:["What burden weighed the fellowship down?","Where did the ring tempt us off course?","One does not simply… what tripped us up?","What shadow clouded the path?"],
+      ideas:["What road is worth taking next sprint?","What should we not simply walk into — but plan?","What fellowship should we forge?","What quest is worth beginning?"],
+    },
+    quotes:["Even the smallest person can change the course of the future.","One does not simply walk into Mordor.","You shall not pass!","There is some good in this world, and it's worth fighting for.","Not all those who wander are lost.","For Frodo."],
+  },
+  {
+    id:"niccage", name:"Nic Cage",
+    palette:{
+      '--c-slate-950':'#0a0800', '--c-slate-900':'#141000', '--c-slate-800':'#221c05',
+      '--c-slate-700':'#3d3210', '--c-slate-600':'#63521a', '--c-slate-500':'#947d33',
+      '--c-slate-400':'#c9ab5f', '--c-slate-200':'#f0e0b0', '--c-slate-100':'#fbf3d9',
+      '--c-accent':'#ffb300',
+    },
+    copy:{
+      brand:"The Cage Rage", boardName:"National Treasure 🏆",
+      sections:{
+        checkin:["Gone in 60 Seconds — Last Sprint","Did we deliver, or did it get gone in 60 seconds?"],
+        mood:["Face/Off — How's the Room?","Tap your mood — put the bunny back in the box"],
+        health:["The Rock — Systems Check","Rate each system — no more bees, please"],
+        wins:["National Treasure","Name a win — I'm gonna steal the Declaration of Independence"],
+        retro:["The Wicker Man Circle","Speak freely — NOT THE BEES!"],
+        next:["Con Air — Next Flight","Where's this plane headed? Up to 3 votes each"],
+        export:["The Family Man Archives","Export this sprint, or bring one back to life"],
+      },
+      healthStrip:"Damage report — how'd it get burned?",
+      signals:(n)=>"🐝 "+n+" signals across 3 channels",
+      cagePrefix:"🎬",
+      barbieHint:"“Not the bees! NOT THE BEES!”",
+    },
+    moods:{
+      ghost:{label:"How'd it get burned?!", emoji:"💀", col:"#94a3b8", img:null},
+      angry:{label:"NOT THE BEES!", emoji:"🐝", col:"#f87171", img:null},
+      stressed:{label:"I'm a vampire!", emoji:"⚡", col:"#fb923c", img:null},
+      meh:{label:"Put the bunny back", emoji:"🐰", col:"#fde047", img:null},
+      focused:{label:"I AM focused!", emoji:"🎯", col:"#a3e635", img:null},
+      happy:{label:"National Treasure", emoji:"🏆", col:"#86efac", img:null},
+      excited:{label:"I want to live again!", emoji:"🌟", col:"#4ade80", img:null},
+    },
+    noteCols:{
+      well:{label:"✅ National Treasure"},
+      bad:{label:"🔥 How'd it get burned?", border:"#f87171", accent:"#dc2626"},
+      ideas:{label:"💡 Steal the Declaration"},
+    },
+    prompts:{
+      well:["I'm a vampire! What gave you energy this sprint?","Put the bunny back in the box — what landed safely?","I AM focused! What showed the team at its sharpest?","What's the national treasure we uncovered?"],
+      bad:["How'd it get burned?! What caught fire?","Not the bees! What stung the team?","I'm having a bad day — what made yours worse?","What feelings will you not cage?"],
+      ideas:["What bold move should we make (steal the Declaration)?","What would breathe life into next sprint?","What unpredictable approach is worth a shot?","What good idea is hiding in a bad movie?"],
+    },
+    quotes:["I'm a vampire!","Not the bees!","Put the bunny back in the box.","How'd it get burned?!","I'm going to steal the Declaration of Independence.","I want to live again!"],
+  },
+  {
+    id:"barbie", name:"Barbie",
     palette:{
       '--c-slate-950':'#1a0712', '--c-slate-900':'#2a0a1f', '--c-slate-800':'#3d1230',
       '--c-slate-700':'#5a1f47', '--c-slate-600':'#7a3563', '--c-slate-500':'#c77fa8',
       '--c-slate-400':'#f0a6cf', '--c-slate-200':'#ffd6ec', '--c-slate-100':'#fff0f8',
       '--c-accent':'#ec4899',
     },
-    copy:{ brand:"Plastic Fantastic", boardName:"Dream Board 💖" },
+    copy:{
+      brand:"Plastic Fantastic", boardName:"Dream Board 💖",
+      sections:{
+        checkin:["Yesterday's Perfect Day","Did we do everything we said in our perfect plan?"],
+        mood:["Feeling Kenough?","Tap your mood — every day here is the best day ever"],
+        health:["Dreamhouse Systems","Rate each part of the Dreamhouse — it's all fantastic (or is it?)"],
+        wins:["Girls' Night Wins","Name a win — you're everything, and so is this sprint"],
+        retro:["Come On Barbie, Let's Talk","Speak up — you can be anything, even honest"],
+        next:["Off to the Real World","Which adventure next? Up to 3 votes each"],
+        export:["The Mattel Archives","Export this sprint, or unbox a previous one"],
+      },
+      healthStrip:"Reality check — dominant reading per system",
+      signals:(n)=>"💖 "+n+" thoughts across 3 channels",
+      cagePrefix:"✨",
+      barbieHint:"“You can be anything.”",
+    },
     status:{
       red:  { fill:'#ffc2d6', border:'#e11d63' },
       amber:{ fill:'#ffe1b3', border:'#f59e0b' },
       green:{ fill:'#c8f7dd', border:'#16a34a' },
     },
     moods:{
-      ghost:{col:'#a78ea0'}, angry:{col:'#e0679b'}, stressed:{col:'#ec4899'},
-      meh:{col:'#f472b6'}, focused:{col:'#f9a8d4'}, happy:{col:'#f5b8e0'}, excited:{col:'#f0abfc'},
+      ghost:{label:"Existential dread", emoji:"💀", col:"#c77fa8", img:null},
+      angry:{label:"I'm Kenough of this", emoji:"😤", col:"#e0679b", img:null},
+      stressed:{label:"Flat feet!", emoji:"⚡", col:"#ec4899", img:null},
+      meh:{label:"Just Ken", emoji:"😐", col:"#f472b6", img:null},
+      focused:{label:"In my Dreamhouse", emoji:"🏠", col:"#f9a8d4", img:null},
+      happy:{label:"Best day ever!", emoji:"💖", col:"#f5b8e0", img:null},
+      excited:{label:"You can be anything", emoji:"🌟", col:"#f0abfc", img:null},
     },
     noteCols:{
-      well: { border:'#f9a8d4', accent:'#db2777' },
-      bad:  { border:'#f472b6', accent:'#be185d' },
-      ideas:{ border:'#e879f9', accent:'#a21caf' },
+      well:{label:"✅ So Fantastic", border:"#f9a8d4", accent:"#db2777"},
+      bad:{label:"💅 Not So Fantastic", border:"#f472b6", accent:"#be185d"},
+      ideas:{label:"💡 Imagine Anything", border:"#e879f9", accent:"#a21caf"},
     },
-  },
-  {
-    id:"console", name:"Sprint Console",
-    palette:{
-      '--c-slate-950':'#000000', '--c-slate-900':'#020a04', '--c-slate-800':'#04160b',
-      '--c-slate-700':'#0d3b1e', '--c-slate-600':'#1a5c30', '--c-slate-500':'#3fa35f',
-      '--c-slate-400':'#6ee787', '--c-slate-200':'#b7ffce', '--c-slate-100':'#d6ffe0',
-      '--c-accent':'#39ff14',
+    prompts:{
+      well:["Life in plastic — what worked beautifully?","What made a day feel just perfect?","You're everything — what did the team nail?","What had us all saying 'hi Barbie!'?"],
+      bad:["It's a weird day to be a problem — what felt off?","Where did confidence take a hit?","What was the hidden friction under the sparkle?","Everything's great, except… what?"],
+      ideas:["What would make next sprint more fun?","What impossible thing is worth imagining?","What underused Ken-ergy should we lean into?","What would the dream sprint look like?"],
     },
-    copy:{ brand:"System Log", boardName:"Sprint Console >_" },
-    status:{
-      red:  { fill:'#f87171', border:'#ef4444' },
-      amber:{ fill:'#fde047', border:'#facc15' },
-      green:{ fill:'#39ff14', border:'#22c55e' },
-    },
-    moods:{
-      ghost:{col:'#3f6f4f'}, angry:{col:'#4a9d5f'}, stressed:{col:'#3fa35f'},
-      meh:{col:'#6ee787'}, focused:{col:'#86efac'}, happy:{col:'#39ff14'}, excited:{col:'#b7ffce'},
-    },
-    noteCols:{
-      well: { border:'#22c55e', accent:'#16a34a' },
-      bad:  { border:'#65a30d', accent:'#4d7c0f' },
-      ideas:{ border:'#39ff14', accent:'#15803d' },
-    },
+    quotes:["You can be anything.","Life in plastic, it's fantastic.","I'm Kenough.","Every day is the best day ever.","She's everything. He's just Ken.","Come on Barbie, let's go party."],
   },
 ];
 
@@ -443,6 +706,10 @@ function applyTheme(id) {
   STATUS    = Object.fromEntries(Object.keys(BASE_STATUS).map(k => [k, { ...BASE_STATUS[k], ...(so[k] || {}) }]));
   MOODS     = BASE_MOODS.map(m => ({ ...m, ...(mo[m.id] || {}) }));
   NOTE_COLS = BASE_NOTE_COLS.map(col => ({ ...col, ...(no[col.id] || {}) }));
+  // Rotating column prompts + wins-wall quotes (per-column fallback to base)
+  const pr = t.prompts;
+  PROMPTS = pr ? { well: pr.well || BASE_PROMPTS.well, bad: pr.bad || BASE_PROMPTS.bad, ideas: pr.ideas || BASE_PROMPTS.ideas } : BASE_PROMPTS;
+  QUOTES  = (t.quotes && t.quotes.length) ? t.quotes : BASE_QUOTES;
   updateThemeButton();
   updateHeader();
   render(false);
@@ -1001,6 +1268,8 @@ function patch(affectedTab) {
 /* ─── MOOD IMAGE HELPER ─────────────────────────────────────── */
 // Returns an inline img tag for use in bars/legends — small circular portrait
 function moodImg(m, size) {
+  // Themes without bespoke art fall back to the mood's emoji
+  if(!m.img) return `<span style="font-size:${Math.max(12,Math.round(size*0.85))}px;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;flex-shrink:0;vertical-align:middle">${m.emoji}</span>`;
   return `<img src="${m.img}" alt="${m.label}" style="width:${size}px;height:${size}px;object-fit:cover;border-radius:50%;flex-shrink:0;vertical-align:middle" onerror="this.style.display='none'">`;
 }
 
@@ -1082,7 +1351,7 @@ function patchWinsUI() {
     note.id = "win-"+w.id;
     note.className = "note-card";
     note.style.cssText = `--rot:${rot}deg;transform:rotate(${rot}deg);background:var(--c-yellow);color:var(--c-ink);border-radius:4px;padding:14px 18px 20px;font-size:14px;font-weight:600;min-width:140px;max-width:200px;box-shadow:3px 4px 12px rgba(0,0,0,.35);line-height:1.4;position:relative`;
-    const cageLine = CAGE_LINES[(w.id||i) % CAGE_LINES.length];
+    const cageLine = QUOTES[(w.id||i) % QUOTES.length];
     note.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
         <span style="font-size:20px">⭐</span>
@@ -1422,10 +1691,10 @@ function renderMood(panel) {
     btn.style.cssText = `background:${isMy?m.col+"33":count>0?m.col+"11":"var(--c-slate-800)"};border:2px solid ${isMy?m.col:count>0?m.col+"55":"var(--c-slate-700)"};border-radius:14px;padding:14px 8px 10px;transition:all .2s;text-align:center;position:relative;overflow:hidden;box-shadow:${isMy?`0 0 12px ${m.col}66`:"none"};transform:${isMy?"scale(1.05)":"scale(1)"}`;
     // Show image; fall back to emoji span on load error
     const imgOrEmoji = `<div style="width:52px;height:52px;margin:0 auto 6px;position:relative;border-radius:50%;overflow:hidden;border:2px solid ${isMy?m.col:"var(--c-slate-700)"};background:var(--c-slate-900);display:flex;align-items:center;justify-content:center">
-      <img src="${m.img}" alt="${m.label}"
+      ${m.img?`<img src="${m.img}" alt="${m.label}"
         style="width:100%;height:100%;object-fit:cover;display:block"
-        onerror="this.style.display='none';this.parentNode.querySelector('.mood-fallback').style.display='flex'">
-      <span class="mood-fallback" style="display:none;position:absolute;inset:0;align-items:center;justify-content:center;font-size:26px">${m.emoji}</span>
+        onerror="this.style.display='none';this.parentNode.querySelector('.mood-fallback').style.display='flex'">`:""}
+      <span class="mood-fallback" style="display:${m.img?"none":"flex"};position:absolute;inset:0;align-items:center;justify-content:center;font-size:30px">${m.emoji}</span>
     </div>`;
     btn.innerHTML = `
       <div class="mood-fill" style="position:absolute;bottom:0;left:0;right:0;height:${pct}%;background:${m.col}22;transition:height .4s ease"></div>
@@ -1669,19 +1938,21 @@ function renderHealth(panel) {
 }
 
 /* ═══ WINS ══════════════════════════════════════════════════ */
-const CAGE_LINES = [
+// Quotes shown on each win card + the wins-wall watermark. Theme-overridable.
+const BASE_QUOTES = [
   "I'm a vampire!", "Not the bees!",
   "I AM A VAMPIRE.", "Put the bunny back in the box.",
   "How'd it get burned?!", "I'm going to steal the Declaration of Independence.",
   "You're not you when you're hungry... wait, wrong guy.",
   "I want to live again!", "It's not about the money...",
 ];
+let QUOTES = BASE_QUOTES;
 function renderWins(panel) {
   panel.appendChild(sectionHead(...COPY.sections.wins));
   // Subtle Nic Cage watermark in the section header area
   const cageHint = document.createElement("div");
   cageHint.style.cssText = "font-size:10px;color:var(--c-slate-700);text-align:right;margin-top:-16px;margin-bottom:18px;font-style:italic;letter-spacing:.03em";
-  cageHint.textContent = COPY.cagePrefix + " “" + CAGE_LINES[Math.floor(Math.random()*CAGE_LINES.length)] + "”";
+  cageHint.textContent = COPY.cagePrefix + " “" + QUOTES[Math.floor(Math.random()*QUOTES.length)] + "”";
   panel.appendChild(cageHint);
 
   const inputRow = document.createElement("div");
