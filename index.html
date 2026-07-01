@@ -95,7 +95,7 @@
   <!-- HEADER -->
   <div id="header" style="background:var(--c-slate-950);border-bottom:2px solid var(--c-accent);padding:14px 28px;display:flex;justify-content:space-between;align-items:center">
     <div>
-      <div style="font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:var(--c-accent);margin-bottom:3px">Agile Ceremony</div>
+      <div id="header-brand" style="font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:var(--c-accent);margin-bottom:3px">Agile Ceremony</div>
       <div id="header-title" style="font-size:20px;font-weight:800;letter-spacing:-.03em">Sprint 55 — Review Board 🖖</div>
     </div>
     <div style="display:flex;align-items:center;gap:20px">
@@ -328,6 +328,30 @@ const NEXT_VOTES_DEF = [
   {id:"fire-emmett", label:"Emmett did a bad job and should never be allowed to do it again",emoji:"😬"},
 ];
 const NOTE_ROTS = [-2,1.5,-1,2.5,-1.5,1,-2.5,0.5];
+
+/* ─── COPY ──────────────────────────────────────────────────────
+   Central home for the board's identity and section headings. Change
+   these to re-theme the wording. (Tab labels live in the nav markup —
+   they're matched by text in setTab, so leave those in place.)         */
+const COPY = {
+  brand: "Agile Ceremony",
+  boardName: "Review Board 🖖",
+  title: (n) => "Sprint " + n + " — " + COPY.boardName,
+  // [heading, subheading] per tab, passed straight to sectionHead()
+  sections: {
+    checkin: ["Previous Actions", "How did the team do on commitments from last sprint?"],
+    mood:    ["How's the room feeling?", "Tap your mood — you can change it any time before we move on"],
+    health:  ["🚀 Ship Systems", "Everyone votes once per system — results update live across the board"],
+    wins:    ["🎉 Wins Wall", "Name a win before the retro — they go up on the wall for everyone to see"],
+    retro:   ["Sprint Retrospective", "Notes appear live — spot the themes before grouping 💭"],
+    next:    ["🗳️ Shape the Next Sprint", "Vote on format and structure — up to 3 votes each. Results visible to everyone live."],
+    export:  ["📦 Export & Import", "Export this sprint's data to carry into the next board — or import a previous sprint's JSON."],
+  },
+  healthStrip: "Damage report — dominant reading per system",
+  signals: (n) => "📡 " + n + " signals across 3 channels",
+  cagePrefix: "🎬",
+  barbieHint: "✨ “You can be anything” — even a high-performing team",
+};
 
 /* ─── STATE ─────────────────────────────────────────────────── */
 // Shared (from Firebase)
@@ -832,10 +856,12 @@ function updateHeader() {
   const ha = document.getElementById("header-actions");
   const hd = document.getElementById("header-date");
   const ht = document.getElementById("header-title");
+  const hb = document.getElementById("header-brand");
   if(ha) ha.textContent = "✅ "+prevActions.filter(a=>a.done).length+"/"+prevActions.length+" previous actions";
   if(hd) hd.textContent = new Date().toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
-  if(ht) ht.textContent = "Sprint "+sprintNum+" — Review Board 🖖";
-  document.title = "Sprint "+sprintNum+" — Review Board 🖖";
+  if(hb) hb.textContent = COPY.brand;
+  if(ht) ht.textContent = COPY.title(sprintNum);
+  document.title = COPY.title(sprintNum);
 }
 
 /* ─── PATCH DISPATCHER ─────────────────────────────────────── */
@@ -1205,7 +1231,7 @@ function tip(text) {
 
 /* ═══ CHECK-IN ══════════════════════════════════════════════ */
 function renderCheckin(panel) {
-  panel.appendChild(sectionHead("Previous Actions","How did the team do on commitments from last sprint?"));
+  panel.appendChild(sectionHead(...COPY.sections.checkin));
 
   if(prevActions.length === 0) {
     const empty = document.createElement("div");
@@ -1265,7 +1291,7 @@ function renderCheckin(panel) {
 
 /* ═══ MOOD ══════════════════════════════════════════════════ */
 function renderMood(panel) {
-  panel.appendChild(sectionHead("How's the room feeling?","Tap your mood — you can change it any time before we move on"));
+  panel.appendChild(sectionHead(...COPY.sections.mood));
   const totalMood = Object.values(moodVotes).reduce((a,b)=>a+b,0);
 
   const grid = document.createElement("div");
@@ -1430,7 +1456,7 @@ function patchHealthUI() {
 
 /* ═══ HEALTH ════════════════════════════════════════════════ */
 function renderHealth(panel) {
-  panel.appendChild(sectionHead("🚀 Ship Systems","Everyone votes once per system — results update live across the board"));
+  panel.appendChild(sectionHead(...COPY.sections.health));
   const myCount = Object.keys(myHealthVotes).length;
 
   // Legend
@@ -1448,7 +1474,7 @@ function renderHealth(panel) {
   if(hasVotes) {
     const strip = document.createElement("div");
     strip.style.cssText = "background:var(--c-slate-800);padding:12px 16px;border-radius:10px;margin-bottom:20px;border:1px solid var(--c-slate-700)";
-    strip.innerHTML = `<div style="font-size:11px;font-weight:700;color:var(--c-slate-500);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Damage report — dominant reading per system</div>
+    strip.innerHTML = `<div style="font-size:11px;font-weight:700;color:var(--c-slate-500);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">${COPY.healthStrip}</div>
       <div style="display:flex;gap:4px;flex-wrap:wrap">
         ${HEALTH_CATS.map(cat=>{
           const dom = dominant(cat.id);
@@ -1534,11 +1560,11 @@ const CAGE_LINES = [
   "I want to live again!", "It's not about the money...",
 ];
 function renderWins(panel) {
-  panel.appendChild(sectionHead("🎉 Wins Wall","Name a win before the retro — they go up on the wall for everyone to see"));
+  panel.appendChild(sectionHead(...COPY.sections.wins));
   // Subtle Nic Cage watermark in the section header area
   const cageHint = document.createElement("div");
   cageHint.style.cssText = "font-size:10px;color:var(--c-slate-700);text-align:right;margin-top:-16px;margin-bottom:18px;font-style:italic;letter-spacing:.03em";
-  cageHint.textContent = "🎬 “" + CAGE_LINES[Math.floor(Math.random()*CAGE_LINES.length)] + "”";
+  cageHint.textContent = COPY.cagePrefix + " “" + CAGE_LINES[Math.floor(Math.random()*CAGE_LINES.length)] + "”";
   panel.appendChild(cageHint);
 
   const inputRow = document.createElement("div");
@@ -1596,11 +1622,11 @@ function renderWins(panel) {
 
 /* ═══ RETRO ═════════════════════════════════════════════════ */
 function renderRetro(panel) {
-  panel.appendChild(sectionHead("Sprint Retrospective","Notes appear live — spot the themes before grouping 💭"));
+  panel.appendChild(sectionHead(...COPY.sections.retro));
   // Subtle Barbie nod in a small tag line
   const barbieHint = document.createElement("div");
   barbieHint.style.cssText = "font-size:10px;color:var(--c-pink);text-align:right;margin-top:-16px;margin-bottom:18px;font-style:italic;letter-spacing:.03em";
-  barbieHint.textContent = "✨ “You can be anything” — even a high-performing team";
+  barbieHint.textContent = COPY.barbieHint;
   panel.appendChild(barbieHint);
 
   const grid = document.createElement("div");
@@ -1663,7 +1689,7 @@ function renderRetro(panel) {
     const summary = document.createElement("div");
     summary.style.cssText = "background:var(--c-slate-800);border:1px solid var(--c-slate-700);border-radius:12px;padding:16px 20px;margin-bottom:24px";
     summary.innerHTML = `
-      <div style="font-size:13px;font-weight:700;color:var(--c-accent);margin-bottom:12px;text-transform:uppercase;letter-spacing:.08em">📡 ${totalNotes} signals across 3 channels</div>
+      <div style="font-size:13px;font-weight:700;color:var(--c-accent);margin-bottom:12px;text-transform:uppercase;letter-spacing:.08em">${COPY.signals(totalNotes)}</div>
       <div style="display:flex;gap:8px">
         ${NOTE_COLS.map(col=>{
           const cn = Array.isArray(notes[col.id])?notes[col.id]:[];
@@ -1797,7 +1823,7 @@ function upvoteNextNote(id) {
 
 /* ═══ NEXT SPRINT ═══════════════════════════════════════════ */
 function renderNext(panel) {
-  panel.appendChild(sectionHead("🗳️ Shape the Next Sprint","Vote on format and structure — up to 3 votes each. Results visible to everyone live."));
+  panel.appendChild(sectionHead(...COPY.sections.next));
   const totalNV = Object.values(nextVotes).reduce((a,b)=>a+b,0);
   const myCount = Object.keys(myNextVotes).length;
 
@@ -1895,7 +1921,7 @@ function renderNext(panel) {
 
 /* ═══ EXPORT / IMPORT ═══════════════════════════════════════ */
 function renderExport(panel) {
-  panel.appendChild(sectionHead("📦 Export & Import","Export this sprint's data to carry into the next board — or import a previous sprint's JSON."));
+  panel.appendChild(sectionHead(...COPY.sections.export));
 
   panel.innerHTML += "";
 
