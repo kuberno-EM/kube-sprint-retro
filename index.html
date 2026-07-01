@@ -112,7 +112,6 @@
         </svg>
         <span id="timer-label">4:00</span>
       </button>
-      <button id="theme-btn" class="cog-btn" onclick="cycleTheme()" title="Cycle board theme — synced to everyone" style="display:flex;align-items:center;gap:6px;width:auto">🎨<span id="theme-btn-label" style="font-size:11px;font-weight:700"></span></button>
       <button class="cog-btn" onclick="openSettings()" title="Settings / Export / Import">⚙️</button>
       <div style="text-align:right;font-size:12px;color:var(--c-slate-500)">
         <div id="header-actions" style="color:var(--c-accent);font-weight:700"></div>
@@ -187,12 +186,13 @@ const HEALTH_CATS = [
   {id:"priority",   label:"Priority clarity",            prev:"amber"},
   {id:"tech-debt",  label:"Technical debt management",  prev:"amber"},
 ];
-const STATUS = {
+const BASE_STATUS = {
   red:  {label:"Needs attention",emoji:"🔴",fill:"#fca5a5",border:"#ef4444"},
   amber:{label:"Could be better", emoji:"🟡",fill:"#fde68a",border:"#f59e0b"},
   green:{label:"All good",        emoji:"🟢",fill:"#86efac",border:"#22c55e"},
 };
-const MOODS = [
+let STATUS = BASE_STATUS;
+const BASE_MOODS = [
   // Ordered worst → best (left → right)
   {id:"ghost",   emoji:"💀", img:"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz4KICA8cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nIzFhMWEyZScgcng9JzUwJy8+CiAgPCEtLSBoZWxtZXQgZG9tZSAtLT4KICA8ZWxsaXBzZSBjeD0nNTAnIGN5PSczOCcgcng9JzI2JyByeT0nMjgnIGZpbGw9JyMxMTEnLz4KICA8IS0tIGhlbG1ldCBiYXNlL2NoZWVrcyAtLT4KICA8cmVjdCB4PScyNCcgeT0nNTInIHdpZHRoPSc1MicgaGVpZ2h0PScxOCcgcng9JzQnIGZpbGw9JyMwYTBhMGEnLz4KICA8IS0tIGZhY2VwbGF0ZSB0cmFwZXpvaWQgLS0+CiAgPHBvbHlnb24gcG9pbnRzPSczMiw1MiA2OCw1MiA2NCw3MCAzNiw3MCcgZmlsbD0nIzFhMWExYScvPgogIDwhLS0gYnJlYXRoaW5nIGdyaWxsZSBsaW5lcyAtLT4KICA8cmVjdCB4PSczOCcgeT0nNTYnIHdpZHRoPScyNCcgaGVpZ2h0PScyJyByeD0nMScgZmlsbD0nIzMzMycvPgogIDxyZWN0IHg9JzM4JyB5PSc2MScgd2lkdGg9JzI0JyBoZWlnaHQ9JzInIHJ4PScxJyBmaWxsPScjMzMzJy8+CiAgPHJlY3QgeD0nMzgnIHk9JzY2JyB3aWR0aD0nMjQnIGhlaWdodD0nMicgcng9JzEnIGZpbGw9JyMzMzMnLz4KICA8IS0tIGV5ZSBsZW5zZXMgLS0+CiAgPGVsbGlwc2UgY3g9JzQwJyBjeT0nNDcnIHJ4PSc3JyByeT0nNScgZmlsbD0nIzIyMicvPgogIDxlbGxpcHNlIGN4PSc2MCcgY3k9JzQ3JyByeD0nNycgcnk9JzUnIGZpbGw9JyMyMjInLz4KICA8IS0tIHJlZCBnbG93IGV5ZXMgLS0+CiAgPGVsbGlwc2UgY3g9JzQwJyBjeT0nNDcnIHJ4PSc0JyByeT0nMycgZmlsbD0nIzhiMDAwMCcgb3BhY2l0eT0nMC44Jy8+CiAgPGVsbGlwc2UgY3g9JzYwJyBjeT0nNDcnIHJ4PSc0JyByeT0nMycgZmlsbD0nIzhiMDAwMCcgb3BhY2l0eT0nMC44Jy8+CiAgPCEtLSBzaG91bGRlciBwYXVsZHJvbnMgLS0+CiAgPHJlY3QgeD0nMTYnIHk9JzY4JyB3aWR0aD0nMjAnIGhlaWdodD0nMTAnIHJ4PSczJyBmaWxsPScjMTExJy8+CiAgPHJlY3QgeD0nNjQnIHk9JzY4JyB3aWR0aD0nMjAnIGhlaWdodD0nMTAnIHJ4PSczJyBmaWxsPScjMTExJy8+CiAgPCEtLSBjaGVzdCBib3ggLS0+CiAgPHJlY3QgeD0nMzQnIHk9JzcyJyB3aWR0aD0nMzInIGhlaWdodD0nMTYnIHJ4PSczJyBmaWxsPScjMWExYTFhJy8+CiAgPHJlY3QgeD0nMzgnIHk9Jzc1JyB3aWR0aD0nNicgaGVpZ2h0PSc0JyByeD0nMScgZmlsbD0nI2MwMCcvPgogIDxyZWN0IHg9JzQ3JyB5PSc3NScgd2lkdGg9JzYnIGhlaWdodD0nNCcgcng9JzEnIGZpbGw9JyMwOTAnLz4KICA8cmVjdCB4PSc1NicgeT0nNzUnIHdpZHRoPSc2JyBoZWlnaHQ9JzQnIHJ4PScxJyBmaWxsPScjMDA5Jy8+Cjwvc3ZnPg==",   label:"I am your father...",   col:"#94a3b8"},
   {id:"angry",   emoji:"😡", img:"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz4KICA8cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nIzFhMWEyZScgcng9JzUwJy8+CiAgPCEtLSBkYXJrIHJvYmUvaG9vZCAtLT4KICA8ZWxsaXBzZSBjeD0nNTAnIGN5PSc0NScgcng9JzI4JyByeT0nMzInIGZpbGw9JyMwZDBkMGQnLz4KICA8IS0tIGhvb2Qgc2hhZG93IC0tPgogIDxlbGxpcHNlIGN4PSc1MCcgY3k9JzMyJyByeD0nMjYnIHJ5PScyMCcgZmlsbD0nIzA1MDUwNScvPgogIDwhLS0gZmFjZSAtIHBhbGUgd3JpbmtsZWQgLS0+CiAgPGVsbGlwc2UgY3g9JzUwJyBjeT0nNTInIHJ4PScxNicgcnk9JzE0JyBmaWxsPScjYzhiODlhJy8+CiAgPCEtLSB3cmlua2xlcy9hZ2UgbGluZXMgLS0+CiAgPHBhdGggZD0nTTM4IDQ4IFE0MiA0NiA0NiA0OCcgc3Ryb2tlPScjYTA5MDdhJyBzdHJva2Utd2lkdGg9JzEuNScgZmlsbD0nbm9uZScvPgogIDxwYXRoIGQ9J001NCA0OCBRNTggNDYgNjIgNDgnIHN0cm9rZT0nI2EwOTA3YScgc3Ryb2tlLXdpZHRoPScxLjUnIGZpbGw9J25vbmUnLz4KICA8cGF0aCBkPSdNNDAgNTUgUTUwIDUyIDYwIDU1JyBzdHJva2U9JyNhMDkwN2EnIHN0cm9rZS13aWR0aD0nMS41JyBmaWxsPSdub25lJy8+CiAgPCEtLSBldmlsIHllbGxvdyBleWVzIC0tPgogIDxlbGxpcHNlIGN4PSc0NCcgY3k9JzUwJyByeD0nNCcgcnk9JzMnIGZpbGw9JyNmZmNjMDAnLz4KICA8ZWxsaXBzZSBjeD0nNTYnIGN5PSc1MCcgcng9JzQnIHJ5PSczJyBmaWxsPScjZmZjYzAwJy8+CiAgPGVsbGlwc2UgY3g9JzQ0JyBjeT0nNTAnIHJ4PScyJyByeT0nMicgZmlsbD0nI2ZmODgwMCcvPgogIDxlbGxpcHNlIGN4PSc1NicgY3k9JzUwJyByeD0nMicgcnk9JzInIGZpbGw9JyNmZjg4MDAnLz4KICA8IS0tIHNuZWVyIG1vdXRoIC0tPgogIDxwYXRoIGQ9J000NCA1OCBRNTAgNTUgNTYgNTgnIHN0cm9rZT0nIzdhNmE1YScgc3Ryb2tlLXdpZHRoPScxLjUnIGZpbGw9J25vbmUnLz4KICA8IS0tIGZvcmNlIGxpZ2h0bmluZyAtLT4KICA8cG9seWxpbmUgcG9pbnRzPScyMCw4MCAyOCw2OCAyNCw2MiAzMiw1MCcgc3Ryb2tlPScjODhhYWZmJyBzdHJva2Utd2lkdGg9JzInIGZpbGw9J25vbmUnIG9wYWNpdHk9JzAuOCcvPgogIDxwb2x5bGluZSBwb2ludHM9JzgwLDgwIDcyLDY4IDc2LDYyIDY4LDUwJyBzdHJva2U9JyM4OGFhZmYnIHN0cm9rZS13aWR0aD0nMicgZmlsbD0nbm9uZScgb3BhY2l0eT0nMC44Jy8+CiAgPCEtLSByb2JlIGJvZHkgLS0+CiAgPHBvbHlnb24gcG9pbnRzPScyMiw3OCA1MCw3MiA3OCw3OCA4MiwxMDAgMTgsMTAwJyBmaWxsPScjMGQwZDBkJy8+Cjwvc3ZnPg==",                                                                                               label:"Fully turned Sith",     col:"#f87171"},
@@ -202,11 +202,13 @@ const MOODS = [
   {id:"happy",   emoji:"😄", img:"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz4KICA8cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nIzFhMWEyZScgcng9JzUwJy8+CiAgPCEtLSBDaGV3aWUgKHJpZ2h0LCBicm93biBmdXIpIC0tPgogIDxlbGxpcHNlIGN4PSc2OCcgY3k9JzQ1JyByeD0nMjAnIHJ5PScyMicgZmlsbD0nIzZiNDIyNicvPgogIDxlbGxpcHNlIGN4PSc2OCcgY3k9JzM4JyByeD0nMTYnIHJ5PScxNCcgZmlsbD0nIzdhNGUyZCcvPgogIDwhLS0gQ2hld2llIGZ1ciB0ZXh0dXJlIC0tPgogIDxlbGxpcHNlIGN4PSc1OCcgY3k9JzMyJyByeD0nOCcgcnk9JzYnIGZpbGw9JyM1YTM1MjAnLz4KICA8ZWxsaXBzZSBjeD0nNzgnIGN5PSczMicgcng9JzgnIHJ5PSc2JyBmaWxsPScjNWEzNTIwJy8+CiAgPCEtLSBDaGV3aWUgZXllcyAtLT4KICA8ZWxsaXBzZSBjeD0nNjMnIGN5PSc0MCcgcng9JzMuNScgcnk9JzMuNScgZmlsbD0nIzFhMGEwMCcvPgogIDxlbGxpcHNlIGN4PSc3MycgY3k9JzQwJyByeD0nMy41JyByeT0nMy41JyBmaWxsPScjMWEwYTAwJy8+CiAgPGVsbGlwc2UgY3g9JzYzJyBjeT0nNDAnIHJ4PScxLjUnIHJ5PScxLjUnIGZpbGw9JyM0YTMwMjAnLz4KICA8ZWxsaXBzZSBjeD0nNzMnIGN5PSc0MCcgcng9JzEuNScgcnk9JzEuNScgZmlsbD0nIzRhMzAyMCcvPgogIDwhLS0gQ2hld2llIGJhbmRvbGllciAtLT4KICA8cGF0aCBkPSdNNTggNTIgUTY4IDQ4IDc4IDUyJyBzdHJva2U9JyNjOGEwMjAnIHN0cm9rZS13aWR0aD0nMycgZmlsbD0nbm9uZScvPgogIDwhLS0gSGFuIChsZWZ0LCBkYXJrIGphY2tldCkgLS0+CiAgPGVsbGlwc2UgY3g9JzM4JyBjeT0nNjgnIHJ4PScxNicgcnk9JzE0JyBmaWxsPScjMWExYTNhJy8+CiAgPGVsbGlwc2UgY3g9JzM4JyBjeT0nNDQnIHJ4PScxNScgcnk9JzE2JyBmaWxsPScjZDRhOTZhJy8+CiAgPCEtLSBIYW4gaGFpciAtIGRhcmsgYnJvd24gLS0+CiAgPGVsbGlwc2UgY3g9JzM4JyBjeT0nMzInIHJ4PScxNCcgcnk9JzEwJyBmaWxsPScjM2EyMDEwJy8+CiAgPHBhdGggZD0nTTI2IDM4IFEyNCAzMCAzMCAyNicgc3Ryb2tlPScjM2EyMDEwJyBzdHJva2Utd2lkdGg9JzUnIGZpbGw9J25vbmUnIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcvPgogIDwhLS0gSGFuIGV5ZXMgLS0+CiAgPGVsbGlwc2UgY3g9JzMzJyBjeT0nNDQnIHJ4PSczJyByeT0nMycgZmlsbD0nIzJhMWEwYScvPgogIDxlbGxpcHNlIGN4PSc0MycgY3k9JzQ0JyByeD0nMycgcnk9JzMnIGZpbGw9JyMyYTFhMGEnLz4KICA8IS0tIEhhbiBzbWlyayAtLT4KICA8cGF0aCBkPSdNMzIgNTIgUTM4IDU2IDQ0IDUzJyBzdHJva2U9JyNhMDcwNDAnIHN0cm9rZS13aWR0aD0nMS41JyBmaWxsPSdub25lJy8+CiAgPCEtLSBIYW4gdmVzdCAtLT4KICA8cmVjdCB4PScyOCcgeT0nNTYnIHdpZHRoPScyMCcgaGVpZ2h0PScyMCcgcng9JzInIGZpbGw9JyMyYTJhMWEnLz4KICA8cmVjdCB4PSczMCcgeT0nNTgnIHdpZHRoPSc2JyBoZWlnaHQ9JzE2JyByeD0nMScgZmlsbD0nIzFhMWEwYScvPgo8L3N2Zz4=",                                                          label:"Chewie, we're home",    col:"#86efac"},
   {id:"excited", emoji:"🌟", img:"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz4KICA8cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nIzFhMWEyZScgcng9JzUwJy8+CiAgPCEtLSB3aGl0ZSByb2JlIGJvZHkgLS0+CiAgPHBvbHlnb24gcG9pbnRzPScyMiwxMDAgMzIsNjIgNTAsNjggNjgsNjIgNzgsMTAwJyBmaWxsPScjZThlOGUwJy8+CiAgPCEtLSBiZWx0IC0tPgogIDxyZWN0IHg9JzMwJyB5PSc2OCcgd2lkdGg9JzQwJyBoZWlnaHQ9JzYnIHJ4PScyJyBmaWxsPScjOGI2OTE0Jy8+CiAgPCEtLSBsaWdodHNhYmVyIGdsb3cgLS0+CiAgPGxpbmUgeDE9JzcyJyB5MT0nMzAnIHgyPSc3MicgeTI9JzcyJyBzdHJva2U9JyMwMGZmODgnIHN0cm9rZS13aWR0aD0nNCcgc3Ryb2tlLWxpbmVjYXA9J3JvdW5kJyBvcGFjaXR5PScwLjknLz4KICA8bGluZSB4MT0nNzInIHkxPSczMCcgeDI9JzcyJyB5Mj0nNzInIHN0cm9rZT0nIzg4ZmZjYycgc3Ryb2tlLXdpZHRoPSc4JyBzdHJva2UtbGluZWNhcD0ncm91bmQnIG9wYWNpdHk9JzAuMycvPgogIDwhLS0gc2FiZXIgaGlsdCAtLT4KICA8cmVjdCB4PSc2OCcgeT0nNjgnIHdpZHRoPSc4JyBoZWlnaHQ9JzEwJyByeD0nMicgZmlsbD0nIzg4OCcvPgogIDwhLS0gaGVhZCAtLT4KICA8ZWxsaXBzZSBjeD0nNDYnIGN5PSc0NCcgcng9JzE4JyByeT0nMjAnIGZpbGw9JyNkNGIwN2EnLz4KICA8IS0tIGJsb25kZSBoYWlyIC0tPgogIDxlbGxpcHNlIGN4PSc0NicgY3k9JzI4JyByeD0nMTcnIHJ5PScxMicgZmlsbD0nI2M4YTAzMCcvPgogIDxwYXRoIGQ9J00zMCAzNiBRMjggMjggMzQgMjQnIHN0cm9rZT0nI2M4YTAzMCcgc3Ryb2tlLXdpZHRoPSc1JyBmaWxsPSdub25lJyBzdHJva2UtbGluZWNhcD0ncm91bmQnLz4KICA8cGF0aCBkPSdNNjIgMzYgUTYyIDI4IDU4IDI1JyBzdHJva2U9JyNjOGEwMzAnIHN0cm9rZS13aWR0aD0nNCcgZmlsbD0nbm9uZScgc3Ryb2tlLWxpbmVjYXA9J3JvdW5kJy8+CiAgPCEtLSBob3BlZnVsIGV5ZXMgLS0+CiAgPGVsbGlwc2UgY3g9JzQwJyBjeT0nNDQnIHJ4PSc0JyByeT0nNCcgZmlsbD0nIzFhMWEyYScvPgogIDxlbGxpcHNlIGN4PSc1MicgY3k9JzQ0JyByeD0nNCcgcnk9JzQnIGZpbGw9JyMxYTFhMmEnLz4KICA8ZWxsaXBzZSBjeD0nNDAnIGN5PSc0NCcgcng9JzIuNScgcnk9JzIuNScgZmlsbD0nIzNhNWE4YScvPgogIDxlbGxpcHNlIGN4PSc1MicgY3k9JzQ0JyByeD0nMi41JyByeT0nMi41JyBmaWxsPScjM2E1YThhJy8+CiAgPGVsbGlwc2UgY3g9JzQxJyBjeT0nNDMnIHJ4PScxJyByeT0nMScgZmlsbD0nd2hpdGUnIG9wYWNpdHk9JzAuOCcvPgogIDxlbGxpcHNlIGN4PSc1MycgY3k9JzQzJyByeD0nMScgcnk9JzEnIGZpbGw9J3doaXRlJyBvcGFjaXR5PScwLjgnLz4KICA8IS0tIGRldGVybWluZWQgc21pbGUgLS0+CiAgPHBhdGggZD0nTTM5IDUzIFE0NiA1OCA1MyA1Mycgc3Ryb2tlPScjYTA3ODQ4JyBzdHJva2Utd2lkdGg9JzEuNScgZmlsbD0nbm9uZScvPgogIDwhLS0gRm9yY2UgaGFuZCBnZXN0dXJlIC0tPgogIDxlbGxpcHNlIGN4PScyNicgY3k9JzYyJyByeD0nNicgcnk9JzUnIGZpbGw9JyNkNGIwN2EnIHRyYW5zZm9ybT0ncm90YXRlKC0yMCAyNiA2MiknLz4KPC9zdmc+",                                                                                                    label:"Rebel victory!",        col:"#4ade80"},
 ];
-const NOTE_COLS = [
+let MOODS = BASE_MOODS;
+const BASE_NOTE_COLS = [
   {id:"well", label:"✅ What went well?",      bg:"#fefce8",border:"#fde047",accent:"#ca8a04"},
   {id:"bad",  label:"💅 What didn't go well?", bg:"#fdf2f8",border:"#f9a8d4",accent:"#db2777", barbie:true},
   {id:"ideas",label:"💡 Ideas & proposals",    bg:"#f0fdf4",border:"#86efac",accent:"#15803d"},
 ];
+let NOTE_COLS = BASE_NOTE_COLS;
 const PROMPTS = {
   well: [
     // Star Trek
@@ -373,6 +375,20 @@ const THEMES = [
       '--c-accent':'#ec4899',
     },
     copy:{ brand:"Plastic Fantastic", boardName:"Dream Board 💖" },
+    status:{
+      red:  { fill:'#ffc2d6', border:'#e11d63' },
+      amber:{ fill:'#ffe1b3', border:'#f59e0b' },
+      green:{ fill:'#c8f7dd', border:'#16a34a' },
+    },
+    moods:{
+      ghost:{col:'#a78ea0'}, angry:{col:'#e0679b'}, stressed:{col:'#ec4899'},
+      meh:{col:'#f472b6'}, focused:{col:'#f9a8d4'}, happy:{col:'#f5b8e0'}, excited:{col:'#f0abfc'},
+    },
+    noteCols:{
+      well: { border:'#f9a8d4', accent:'#db2777' },
+      bad:  { border:'#f472b6', accent:'#be185d' },
+      ideas:{ border:'#e879f9', accent:'#a21caf' },
+    },
   },
   {
     id:"console", name:"Sprint Console",
@@ -383,6 +399,20 @@ const THEMES = [
       '--c-accent':'#39ff14',
     },
     copy:{ brand:"System Log", boardName:"Sprint Console >_" },
+    status:{
+      red:  { fill:'#f87171', border:'#ef4444' },
+      amber:{ fill:'#fde047', border:'#facc15' },
+      green:{ fill:'#39ff14', border:'#22c55e' },
+    },
+    moods:{
+      ghost:{col:'#3f6f4f'}, angry:{col:'#4a9d5f'}, stressed:{col:'#3fa35f'},
+      meh:{col:'#6ee787'}, focused:{col:'#86efac'}, happy:{col:'#39ff14'}, excited:{col:'#b7ffce'},
+    },
+    noteCols:{
+      well: { border:'#22c55e', accent:'#16a34a' },
+      bad:  { border:'#65a30d', accent:'#4d7c0f' },
+      ideas:{ border:'#39ff14', accent:'#15803d' },
+    },
   },
 ];
 
@@ -405,21 +435,38 @@ function applyTheme(id) {
   // Copy: layer this theme's partial over the base
   const c = t.copy || {};
   COPY = { ...BASE_COPY, ...c, sections: { ...BASE_COPY.sections, ...(c.sections || {}) } };
+  // Semantic colour sets — RAG status, mood spectrum, retro columns. Each theme
+  // supplies partial overrides keyed by status (red/amber/green) / mood id /
+  // column id; anything omitted keeps the base value.
+  const so = t.status || {}, mo = t.moods || {}, no = t.noteCols || {};
+  STATUS    = Object.fromEntries(Object.keys(BASE_STATUS).map(k => [k, { ...BASE_STATUS[k], ...(so[k] || {}) }]));
+  MOODS     = BASE_MOODS.map(m => ({ ...m, ...(mo[m.id] || {}) }));
+  NOTE_COLS = BASE_NOTE_COLS.map(col => ({ ...col, ...(no[col.id] || {}) }));
   updateThemeButton();
   updateHeader();
   render(false);
 }
 
+// Reflect the active theme in the Settings panel (if it's open)
 function updateThemeButton() {
-  const lbl = document.getElementById("theme-btn-label");
+  const lbl = document.getElementById("theme-current-label");
   if(lbl) lbl.textContent = themeById(currentTheme).name;
+  THEMES.forEach(t => {
+    const b = document.getElementById("theme-opt-" + t.id);
+    if(!b) return;
+    const on = t.id === currentTheme;
+    b.style.background  = on ? "var(--c-accent)"    : "var(--c-slate-900)";
+    b.style.color       = on ? "var(--c-slate-950)" : "var(--c-slate-200)";
+    b.style.borderColor = on ? "var(--c-accent)"    : "var(--c-slate-700)";
+    b.style.fontWeight  = on ? "800" : "600";
+  });
 }
 
-// Advance to the next theme — writes to Firebase so it changes for everyone
+// Both write to Firebase so the change lands on everyone's screen
+function setTheme(id) { db.ref("sprints/meta/theme").set(id); }
 function cycleTheme() {
   const i = THEMES.findIndex(t => t.id === currentTheme);
-  const next = THEMES[(i + 1) % THEMES.length];
-  db.ref("sprints/meta/theme").set(next.id);
+  setTheme(THEMES[(i + 1) % THEMES.length].id);
 }
 
 function initThemeSync() {
@@ -700,6 +747,7 @@ function openSettings() {
   const panel = document.createElement("div");
   renderExport(panel);
   content.appendChild(panel);
+  updateThemeButton(); // fill in current-theme label + highlight now that it's in the DOM
   overlay.classList.add("open");
 }
 function closeSettings() {
@@ -2003,6 +2051,18 @@ function renderExport(panel) {
   info.style.cssText = "background:var(--c-green-panel);border:1px solid var(--c-green-panel-border);border-radius:10px;padding:12px 16px;margin-bottom:20px;display:flex;gap:10px;align-items:flex-start";
   info.innerHTML = `<span style="font-size:16px">🔥</span><div style="font-size:13px;color:var(--c-green-300);line-height:1.6"><strong>Firebase Realtime Database is active.</strong> All votes, notes, wins and actions sync in real-time across everyone's browsers. Data persists indefinitely — closing the tab or refreshing won't lose anything.<br/>Between sprints, Export a snapshot below, paste it somewhere safe, then Import it into the next sprint's board.</div>`;
   panel.appendChild(info);
+
+  // Theme picker
+  const themeBox = document.createElement("div");
+  themeBox.style.cssText = "background:var(--c-slate-800);border:1px solid var(--c-slate-700);border-radius:12px;padding:20px 24px;margin-bottom:16px";
+  themeBox.innerHTML = `
+    <div style="font-size:15px;font-weight:800;color:var(--c-slate-100);margin-bottom:6px">🎨 Board Theme</div>
+    <div style="font-size:13px;color:var(--c-slate-500);margin-bottom:14px">Switches the palette and wording live for <strong style="color:var(--c-accent)">everyone on the call</strong>. Current: <span id="theme-current-label" style="color:var(--c-accent);font-weight:700"></span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+      ${THEMES.map(t=>`<button id="theme-opt-${t.id}" onclick="setTheme('${t.id}')" style="border:1.5px solid var(--c-slate-700);border-radius:8px;padding:8px 14px;font-size:13px;background:var(--c-slate-900);color:var(--c-slate-200);transition:all .15s">${t.name}</button>`).join("")}
+    </div>
+    <button onclick="cycleTheme()" style="background:var(--c-accent);color:var(--c-slate-950);border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:800">🎨 Next theme →</button>`;
+  panel.appendChild(themeBox);
 
   // Sprint number control
   const sprintBox = document.createElement("div");
