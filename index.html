@@ -406,6 +406,8 @@ function castMoodVote(id) {
     if(prev) updated[prev] = Math.max(0, (updated[prev]||1) - 1);
     return updated;
   });
+  // Optimistically patch UI immediately so voter sees instant feedback
+  if(currentTab === "mood") patchMoodUI();
 }
 
 function castHealthVote(catId, status) {
@@ -445,8 +447,9 @@ function addNote(col) {
   const input = document.getElementById("note-input-"+col);
   const v = (input?.value||"").trim();
   if(!v) return;
-  const id = Date.now();
   const colNotes = Array.isArray(notes[col]) ? notes[col] : [];
+  let id = Date.now();
+  while(colNotes.some(n=>n.id===id)) { id++; }
   const updated  = {...notes, [col]:[...colNotes, {id,text:v,votes:0,creatorId:MY_ID}]};
   fw("notes", updated);
   input.value = "";
@@ -469,7 +472,8 @@ function addCelebrate() {
   const input = document.getElementById("cel-input");
   const v = (input?.value||"").trim();
   if(!v) return;
-  const id = Date.now();
+  let id = Date.now();
+  while(celebrate.some(w=>w.id===id)) { id++; }
   const updated = [...celebrate, {id,text:v,creatorId:MY_ID}];
   fw("celebrate", updated);
   input.value = "";
@@ -479,7 +483,9 @@ function addAction() {
   const t = document.getElementById("act-text");
   const o = document.getElementById("act-owner");
   if(!(t?.value||"").trim()) return;
-  const updated = [...actions, {id:Date.now(), text:t.value.trim(), owner:o.value.trim()}];
+  let id = Date.now();
+  while(actions.some(a=>a.id===id)) { id++; }
+  const updated = [...actions, {id, text:t.value.trim(), owner:o.value.trim()}];
   fw("actions", updated);
   t.value = ""; o.value = "";
 }
@@ -950,6 +956,9 @@ function patchRetroUI() {
         if(voteBtn) { voteBtn.textContent = n.votes; voteBtn.style.color = n.votes>0?col.accent:"#64748b"; }
         const upBtn = existing.querySelector(".upvote-btn");
         if(upBtn) { upBtn.style.opacity = alreadyVoted?"0.45":"1"; upBtn.style.cursor = alreadyVoted?"not-allowed":"pointer"; }
+        // Re-order in place to match the (vote-sorted) array. appendChild moves the
+        // live node, so any open inline-edit on it is preserved.
+        listEl.appendChild(existing);
         return;
       }
       // New note — insert it
@@ -985,15 +994,20 @@ function patchRetroUI() {
       if(!colNotes.find(n=>n.id===id)) el.remove();
     });
   });
-  // Also patch actions table rows
+  // Also patch actions table rows — only the data rows are replaced; the trailing
+  // add-row (and whatever the user is currently typing into it) is left untouched.
   const actBody = document.getElementById("retro-actions-body");
   if(actBody) {
-    actBody.innerHTML = actions.map(a=>`
+    const addRow   = document.getElementById("retro-action-add-row");
+    const rowsHTML = actions.map(a=>`
       <tr style="border-bottom:1px solid #1e293b">
         <td style="padding:11px 14px;font-size:14px">${a.text}</td>
         <td style="padding:11px 14px;font-size:13px;color:#60a5fa;font-weight:600">${a.owner||""}</td>
         <td style="padding:11px 14px"><button onclick="removeAction(${a.id})" style="background:none;border:none;color:#475569;font-size:14px;cursor:pointer">✕</button></td>
       </tr>`).join("");
+    Array.from(actBody.querySelectorAll("tr")).forEach(tr=>{ if(tr!==addRow) tr.remove(); });
+    if(addRow) { addRow.insertAdjacentHTML("beforebegin", rowsHTML); }
+    else       { actBody.innerHTML = rowsHTML; }
   }
 }
 
@@ -1053,6 +1067,7 @@ function patchNextUI() {
       const upBtn     = existing.querySelector(".upvote-btn");
       if(voteCount) { voteCount.textContent = n.votes; voteCount.style.color = n.votes>0?"#818cf8":"#64748b"; }
       if(upBtn)     { upBtn.style.opacity = alreadyVoted?"0.45":"1"; upBtn.style.cursor = alreadyVoted?"not-allowed":"pointer"; }
+      listEl.appendChild(existing);
       return;
     }
     const noteEl = document.createElement("div");
@@ -1220,6 +1235,7 @@ function renderMood(panel) {
     const pct   = totalMood>0?(count/totalMood)*100:0;
     const isMy  = myMoodVote===m.id;
     const btn   = document.createElement("button");
+    btn.id = "mbtn-"+m.id;
     btn.style.cssText = `background:${isMy?m.col+"33":count>0?m.col+"11":"#1e293b"};border:2px solid ${isMy?m.col:count>0?m.col+"55":"#334155"};border-radius:14px;padding:14px 8px 10px;transition:all .2s;text-align:center;position:relative;overflow:hidden;box-shadow:${isMy?`0 0 12px ${m.col}66`:"none"};transform:${isMy?"scale(1.05)":"scale(1)"}`;
     // Show image; fall back to emoji span on load error
     const imgOrEmoji = `<div style="width:52px;height:52px;margin:0 auto 6px;position:relative;border-radius:50%;overflow:hidden;border:2px solid ${isMy?m.col:"#334155"};background:#0f172a;display:flex;align-items:center;justify-content:center">
@@ -1341,6 +1357,26 @@ function patchHealthUI() {
         barWrap.innerHTML = "";
       }
     }
+
+    // ── Vote buttons — reflect this browser's own selection ──
+    const myV = myHealthVotes[cat.id];
+    ["red","amber","green"].forEach(st => {
+      const b = document.getElementById("hbtn-"+cat.id+"-"+st);
+      if(!b) return;
+      const isMy = myV === st;
+      b.style.background  = isMy ? STATUS[st].fill : "#0f172a";
+      b.style.borderColor = isMy ? STATUS[st].border : "#334155";
+      b.style.transform   = isMy ? "scale(1.1)" : "scale(1)";
+      b.style.boxShadow    = isMy ? `0 0 8px ${STATUS[st].border}88` : "none";
+    });
+
+    // ── "Your vote" line ──
+    const voteLine = document.getElementById("hvote-"+cat.id);
+    if(voteLine) {
+      voteLine.innerHTML = myV
+        ? `Your vote: <span style="color:${STATUS[myV].border};font-weight:700">${STATUS[myV].label}</span>`
+        : "";
+    }
   });
 
   // ── My vote count in legend ──
@@ -1443,7 +1479,7 @@ function renderHealth(panel) {
       </div>`:""}
       ${distBar}
       <div style="display:flex;gap:6px">${btns}</div>
-      ${myV?`<div style="font-size:11px;text-align:center;margin-top:6px;color:#475569">Your vote: <span style="color:${STATUS[myV].border};font-weight:700">${STATUS[myV].label}</span></div>`:""}`;
+      <div id="hvote-${cat.id}" style="font-size:11px;text-align:center;margin-top:6px;color:#475569">${myV?`Your vote: <span style="color:${STATUS[myV].border};font-weight:700">${STATUS[myV].label}</span>`:""}</div>`;
     grid.appendChild(card);
   });
   panel.appendChild(grid);
@@ -1548,9 +1584,9 @@ function renderRetro(panel) {
                 ${n.creatorId===MY_ID?`
                 <button onclick="startInlineEdit('${eid}','${n.text.replace(/'/g,"\'")}',null)" title="Edit" style="background:none;border:none;cursor:pointer;font-size:12px;color:#64748b;padding:2px 4px">✏️</button>
                 <button onclick="deleteNote('${col.id}',${n.id})" title="Delete" style="background:none;border:none;cursor:pointer;font-size:12px;color:#64748b;padding:2px 4px">✕</button>`:""}
-                <button onclick="upvoteNote('${col.id}',${n.id})" title="${myNoteVotes[n.id]?'Already voted':''}" style="display:flex;flex-direction:column;align-items:center;gap:1px;background:${n.votes>0?col.accent+"22":"rgba(255,255,255,.5)"};border:1.5px solid ${n.votes>0?col.accent:"rgba(0,0,0,.12)"};border-radius:7px;padding:4px 7px;min-width:34px;cursor:${myNoteVotes[n.id]?"not-allowed":"pointer"};opacity:${myNoteVotes[n.id]?0.45:1}">
+                <button class="upvote-btn" onclick="upvoteNote('${col.id}',${n.id})" title="${myNoteVotes[n.id]?'Already voted':''}" style="display:flex;flex-direction:column;align-items:center;gap:1px;background:${n.votes>0?col.accent+"22":"rgba(255,255,255,.5)"};border:1.5px solid ${n.votes>0?col.accent:"rgba(0,0,0,.12)"};border-radius:7px;padding:4px 7px;min-width:34px;cursor:${myNoteVotes[n.id]?"not-allowed":"pointer"};opacity:${myNoteVotes[n.id]?0.45:1}">
                   <span style="font-size:11px;line-height:1">▲</span>
-                  <span style="font-size:12px;font-weight:800;color:${n.votes>0?col.accent:"#64748b"};line-height:1;margin-top:1px">${n.votes}</span>
+                  <span class="vote-count" style="font-size:12px;font-weight:800;color:${n.votes>0?col.accent:"#64748b"};line-height:1;margin-top:1px">${n.votes}</span>
                 </button>
               </div>
             </div>
@@ -1624,7 +1660,7 @@ function renderRetro(panel) {
     </tr></thead>
     <tbody id="retro-actions-body">
       ${actRows}
-      <tr>
+      <tr id="retro-action-add-row">
         <td style="padding:8px 14px"><input id="act-text" class="act-input" placeholder="Describe the action…"/></td>
         <td style="padding:8px 8px"><input id="act-owner" class="act-input" placeholder="Owner"/></td>
         <td style="padding:8px 8px"><button onclick="addAction()" style="background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-weight:700;font-size:13px">Add</button></td>
@@ -1699,7 +1735,8 @@ function addNextNote() {
   const input = document.getElementById("next-note-input");
   const v = (input?.value||"").trim();
   if(!v) return;
-  const id = Date.now();
+  let id = Date.now();
+  while(nextNotes.some(n=>n.id===id)) { id++; }
   const updated = [...nextNotes, {id, text:v, votes:0, creatorId:MY_ID}];
   fw("nextNotes", updated);
   input.value = "";
@@ -1782,9 +1819,9 @@ function renderNext(panel) {
               ${n.creatorId===MY_ID?`
               <button onclick="startInlineEdit('${eid}','${n.text.replace(/'/g,"\'")}',null)" title="Edit" style="background:none;border:none;cursor:pointer;font-size:12px;color:#64748b;padding:2px 4px">✏️</button>
               <button onclick="deleteNextNote(${n.id})" title="Delete" style="background:none;border:none;cursor:pointer;font-size:12px;color:#64748b;padding:2px 4px">✕</button>`:""}
-              <button onclick="upvoteNextNote(${n.id})" title="${myNoteVotes[n.id]?'Already voted':''}" style="display:flex;flex-direction:column;align-items:center;gap:1px;background:${n.votes>0?"#6366f122":"rgba(255,255,255,.05)"};border:1.5px solid ${n.votes>0?"#6366f1":"#334155"};border-radius:7px;padding:4px 7px;min-width:34px;cursor:${myNoteVotes[n.id]?"not-allowed":"pointer"};opacity:${myNoteVotes[n.id]?0.45:1}">
+              <button class="upvote-btn" onclick="upvoteNextNote(${n.id})" title="${myNoteVotes[n.id]?'Already voted':''}" style="display:flex;flex-direction:column;align-items:center;gap:1px;background:${n.votes>0?"#6366f122":"rgba(255,255,255,.05)"};border:1.5px solid ${n.votes>0?"#6366f1":"#334155"};border-radius:7px;padding:4px 7px;min-width:34px;cursor:${myNoteVotes[n.id]?"not-allowed":"pointer"};opacity:${myNoteVotes[n.id]?0.45:1}">
                 <span style="font-size:11px;line-height:1;color:#94a3b8">▲</span>
-                <span style="font-size:12px;font-weight:800;color:${n.votes>0?"#818cf8":"#64748b"};line-height:1;margin-top:1px">${n.votes}</span>
+                <span class="vote-count" style="font-size:12px;font-weight:800;color:${n.votes>0?"#818cf8":"#64748b"};line-height:1;margin-top:1px">${n.votes}</span>
               </button>
             </div>
           </div>
