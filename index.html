@@ -112,6 +112,7 @@
         </svg>
         <span id="timer-label">4:00</span>
       </button>
+      <button id="theme-btn" class="cog-btn" onclick="cycleTheme()" title="Cycle board theme — applies to this browser only" style="display:flex;align-items:center;gap:6px;width:auto">🎨<span id="theme-btn-label" style="font-size:11px;font-weight:700"></span></button>
       <button class="cog-btn" onclick="openSettings()" title="Settings / Export / Import">⚙️</button>
       <div style="text-align:right;font-size:12px;color:var(--c-slate-500)">
         <div id="header-actions" style="color:var(--c-accent);font-weight:700"></div>
@@ -447,30 +448,26 @@ function applyTheme(id) {
   render(false);
 }
 
-// Reflect the active theme in the Settings panel (if it's open)
+// Show the active theme's name on the header button
 function updateThemeButton() {
-  const lbl = document.getElementById("theme-current-label");
+  const lbl = document.getElementById("theme-btn-label");
   if(lbl) lbl.textContent = themeById(currentTheme).name;
-  THEMES.forEach(t => {
-    const b = document.getElementById("theme-opt-" + t.id);
-    if(!b) return;
-    const on = t.id === currentTheme;
-    b.style.background  = on ? "var(--c-accent)"    : "var(--c-slate-900)";
-    b.style.color       = on ? "var(--c-slate-950)" : "var(--c-slate-200)";
-    b.style.borderColor = on ? "var(--c-accent)"    : "var(--c-slate-700)";
-    b.style.fontWeight  = on ? "800" : "600";
-  });
 }
 
-// Both write to Firebase so the change lands on everyone's screen
-function setTheme(id) { db.ref("sprints/meta/theme").set(id); }
+// Theme is a per-browser preference (localStorage) — each person picks their own
+const THEME_KEY = "retro:theme";
+function setTheme(id) {
+  try { localStorage.setItem(THEME_KEY, id); } catch(e) {}
+  applyTheme(id);
+}
 function cycleTheme() {
   const i = THEMES.findIndex(t => t.id === currentTheme);
   setTheme(THEMES[(i + 1) % THEMES.length].id);
 }
-
-function initThemeSync() {
-  db.ref("sprints/meta/theme").on("value", s => applyTheme(s.val() || THEMES[0].id));
+function initTheme() {
+  let saved = null;
+  try { saved = localStorage.getItem(THEME_KEY); } catch(e) {}
+  applyTheme(saved || THEMES[0].id); // themeById() falls back if the saved id is unknown
 }
 
 /* ─── STATE ─────────────────────────────────────────────────── */
@@ -747,7 +744,6 @@ function openSettings() {
   const panel = document.createElement("div");
   renderExport(panel);
   content.appendChild(panel);
-  updateThemeButton(); // fill in current-theme label + highlight now that it's in the DOM
   overlay.classList.add("open");
 }
 function closeSettings() {
@@ -2052,18 +2048,6 @@ function renderExport(panel) {
   info.innerHTML = `<span style="font-size:16px">🔥</span><div style="font-size:13px;color:var(--c-green-300);line-height:1.6"><strong>Firebase Realtime Database is active.</strong> All votes, notes, wins and actions sync in real-time across everyone's browsers. Data persists indefinitely — closing the tab or refreshing won't lose anything.<br/>Between sprints, Export a snapshot below, paste it somewhere safe, then Import it into the next sprint's board.</div>`;
   panel.appendChild(info);
 
-  // Theme picker
-  const themeBox = document.createElement("div");
-  themeBox.style.cssText = "background:var(--c-slate-800);border:1px solid var(--c-slate-700);border-radius:12px;padding:20px 24px;margin-bottom:16px";
-  themeBox.innerHTML = `
-    <div style="font-size:15px;font-weight:800;color:var(--c-slate-100);margin-bottom:6px">🎨 Board Theme</div>
-    <div style="font-size:13px;color:var(--c-slate-500);margin-bottom:14px">Switches the palette and wording live for <strong style="color:var(--c-accent)">everyone on the call</strong>. Current: <span id="theme-current-label" style="color:var(--c-accent);font-weight:700"></span></div>
-    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
-      ${THEMES.map(t=>`<button id="theme-opt-${t.id}" onclick="setTheme('${t.id}')" style="border:1.5px solid var(--c-slate-700);border-radius:8px;padding:8px 14px;font-size:13px;background:var(--c-slate-900);color:var(--c-slate-200);transition:all .15s">${t.name}</button>`).join("")}
-    </div>
-    <button onclick="cycleTheme()" style="background:var(--c-accent);color:var(--c-slate-950);border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:800">🎨 Next theme →</button>`;
-  panel.appendChild(themeBox);
-
   // Sprint number control
   const sprintBox = document.createElement("div");
   sprintBox.style.cssText = "background:var(--c-slate-800);border:1px solid var(--c-slate-700);border-radius:12px;padding:20px 24px;margin-bottom:16px";
@@ -2257,7 +2241,7 @@ window.addEventListener("load", async ()=>{
   initListeners();
   initMetaListeners();
   initTimerSync();
-  initThemeSync();
+  initTheme();
 
   // Hide loader once first data arrives (or after 2s)
   let shown = false;
