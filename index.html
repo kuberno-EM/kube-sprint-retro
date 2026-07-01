@@ -790,6 +790,7 @@ let connected  = false;
 // every write is blocked (see fw/ftx). sprintNum still tracks the LIVE sprint.
 let isHistory     = false;
 let viewingSprint = null;
+let availableSprints = []; // sprint numbers present in Firebase, for the picker
 
 /* ─── FIREBASE LISTENERS ────────────────────────────────────── */
 let _sprintListenersPath = null; // track which path listeners are attached to
@@ -907,7 +908,7 @@ function updateHistoryBanner() {
 
 // Populate the Settings picker with every sprint stored in Firebase.
 // Fetch first: renderExport() calls this before the panel is attached to the
-// document, so the target element only exists once the await has yielded.
+// document, so the target elements only exist once the await has yielded.
 async function loadSprintList() {
   let all;
   try {
@@ -915,35 +916,43 @@ async function loadSprintList() {
     all = snap.val() || {};
   } catch(e) {
     console.error(e);
-    const errEl = document.getElementById("sprint-browse-list");
-    if(errEl) errEl.innerHTML = `<span style="color:var(--c-red)">⚠️ Couldn't load sprint list — check console.</span>`;
+    const errEl = document.getElementById("sprint-browse-status");
+    if(errEl) errEl.innerHTML = `<span style="color:var(--c-red)">⚠️ Couldn't load sprints — check console.</span>`;
     return;
   }
-  const el = document.getElementById("sprint-browse-list");
-  if(!el) return;
-  const nums = Object.keys(all)
+  availableSprints = Object.keys(all)
     .filter(k => /^s\d+$/.test(k))
     .map(k => parseInt(k.slice(1), 10))
     .sort((a, b) => b - a);
-  if(!nums.length) { el.innerHTML = `<span style="font-style:italic">No sprints found.</span>`; return; }
-  el.innerHTML = nums.map(n => {
-    const isLive    = n === sprintNum;
-    const isViewing = isHistory && n === viewingSprint;
-    let right;
-    if(isViewing) {
-      right = `<span style="color:var(--c-indigo-400);font-weight:700">👁 Viewing</span>`;
-    } else if(isLive) {
-      right = isHistory
-        ? `<button onclick="returnToLive()" style="background:var(--c-green-700);color:var(--c-white);border:none;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer">Return to live</button>`
-        : `<span style="color:var(--c-green);font-weight:700">● Live</span>`;
+
+  const list = document.getElementById("sprint-browse-options");
+  if(list) {
+    list.innerHTML = availableSprints.map(n =>
+      `<option value="${n}">Sprint ${n}${n===sprintNum?" (current)":""}</option>`
+    ).join("");
+  }
+  const status = document.getElementById("sprint-browse-status");
+  if(status) {
+    if(!availableSprints.length) {
+      status.textContent = "No sprints found.";
+    } else if(isHistory) {
+      status.innerHTML = `Viewing Sprint <strong style="color:var(--c-indigo-400)">${viewingSprint}</strong> · `
+        + `<button onclick="returnToLive()" style="background:none;border:none;color:var(--c-green);font-weight:700;cursor:pointer;padding:0;font-size:12px;text-decoration:underline">return to live (${sprintNum})</button>`;
     } else {
-      right = `<button onclick="viewSprint(${n})" style="background:var(--c-indigo);color:var(--c-white);border:none;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer">View</button>`;
+      status.innerHTML = `${availableSprints.length} sprint${availableSprints.length!==1?"s":""} · live is <strong style="color:var(--c-green)">${sprintNum}</strong>`;
     }
-    return `<div style="display:flex;justify-content:space-between;align-items:center;background:var(--c-slate-900);border:1px solid ${isViewing?"var(--c-indigo)":isLive?"var(--c-green-panel-border)":"var(--c-slate-700)"};border-radius:8px;padding:9px 14px">
-      <span style="font-weight:700;color:var(--c-slate-200)">Sprint ${n}${isLive?'<span style="color:var(--c-slate-500);font-weight:400"> · current</span>':''}</span>
-      ${right}
-    </div>`;
-  }).join("");
+  }
+}
+
+// View whatever sprint number the picker input currently holds
+function viewSelectedSprint() {
+  const input = document.getElementById("sprint-browse-input");
+  const err   = document.getElementById("sprint-browse-err");
+  if(err) err.textContent = "";
+  const n = parseInt((input?.value || "").trim(), 10);
+  if(!n)                             { if(err) err.textContent = "Enter a sprint number."; return; }
+  if(!availableSprints.includes(n))  { if(err) err.textContent = "Sprint " + n + " isn't in Firebase."; return; }
+  viewSprint(n);
 }
 
 /* ─── WRITE HELPERS ─────────────────────────────────────────── */
@@ -2450,7 +2459,15 @@ function renderExport(panel) {
   browseBox.innerHTML = `
     <div style="font-size:15px;font-weight:800;color:var(--c-slate-100);margin-bottom:6px">👁 Browse Previous Sprints</div>
     <div style="font-size:13px;color:var(--c-slate-500);margin-bottom:14px">Open a past sprint <strong style="color:var(--c-indigo-400)">read-only</strong> — you can look but not change its content, and no one else's board is affected. Use “Return to live sprint” to come back.</div>
-    <div id="sprint-browse-list" style="display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--c-slate-500)">Loading sprints…</div>`;
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <input id="sprint-browse-input" list="sprint-browse-options" type="text" inputmode="numeric" autocomplete="off" placeholder="Type or pick a sprint…"
+        onkeydown="if(event.key==='Enter')viewSelectedSprint()"
+        style="width:170px;background:var(--c-slate-900);border:1.5px solid var(--c-slate-700);border-radius:8px;padding:8px 12px;font-size:14px;color:var(--c-slate-100);outline:none"/>
+      <datalist id="sprint-browse-options"></datalist>
+      <button onclick="viewSelectedSprint()" style="background:var(--c-indigo);color:var(--c-white);border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer">View</button>
+      <span id="sprint-browse-status" style="font-size:12px;color:var(--c-slate-500)">Loading sprints…</span>
+    </div>
+    <div id="sprint-browse-err" style="font-size:12px;color:var(--c-red);margin-top:8px"></div>`;
   panel.appendChild(browseBox);
   loadSprintList();
 
